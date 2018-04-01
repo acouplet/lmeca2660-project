@@ -1,0 +1,29 @@
+\documentclass[a4paper,10pt]{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{lmodern}
+\usepackage{pgfplots}
+\usepackage{tikz}
+\usepackage{fullpage}
+\usepackage{comment}
+
+\usetikzlibrary{external}
+\tikzexternalize[prefix=figures/]
+\usepgfplotslibrary{colorbrewer}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.15}
+\pgfplotsset{cycle list/Set1}
+
+\newcommand\partiald[3]{\frac{\partial\ifnum#1>1 ^{#1}\fi #2}{\partial #3\ifnum#1>1 ^{#1}\fi}}
+
+\subject{LMECA2660 - Numerical Methods in Fluid Mechanics}
+\title{Project: Numerical study of the heating of a fluid in a box}
+\author{Adrien \textsc{Couplet} \and Marie-Pierre \textsc{van Oldeneel}}
+
+\begin{document}
+\maketitle
+
+\end{document}
+

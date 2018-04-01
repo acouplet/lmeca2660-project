@@ -39,6 +39,7 @@
 *.i*86
 *.x86_64
 *.hex
+code/main
 
 # Debug files
 *.dSYM/
@@ -67,6 +68,7 @@ dkms.conf
 *.fot
 *.cb
 *.cb2
+report/pdf/*
 
 ## Intermediate documents:
 *.dvi

@@ -1,0 +1,8 @@
+$pdf_mode = 1;
+$pdflatex = 'texfot pdflatex -interaction=nonstopmode';
+$pdf_previewer = 'xdg-open';
+$out_dir = './pdf';
+@default_files = ('./main.tex');
+
+$preview_continuous_mode = 1; #-pvc- in terminal to turn off this feature for the current command
+
