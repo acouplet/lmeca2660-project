@@ -8,6 +8,7 @@
 \usepackage{tikz}
 \usepackage{fullpage}
 \usepackage{comment}
+\usepackage{siunitx}
 
 \usetikzlibrary{external}
 \tikzexternalize[prefix=figures/]
@@ -17,6 +18,10 @@
 \pgfplotsset{cycle list/Set1}
 
 \newcommand\partiald[3]{\frac{\partial\ifnum#1>1 ^{#1}\fi #2}{\partial #3\ifnum#1>1 ^{#1}\fi}}
+\newcommand\matder[1]{\frac{D#1}{Dt}}
+\renewcommand\div{\vec{\nabla}\cdot}
+\newcommand\lapl{\vec{\nabla}^2}
+\newcommand\grad{\vec{\nabla}}
 
 \subject{LMECA2660 - Numerical Methods in Fluid Mechanics}
 \title{Project: Numerical study of the heating of a fluid in a box}
@@ -24,6 +29,69 @@
 
 \begin{document}
 \maketitle
+\section{Introduction}
+In this project, it is proposed to study numerically the heating of a fluid in a box and the 2-D flow arising from natural convection. The box has a rectangular shape of sides $L\times H$ and the height is taken as $H=\frac{3}{2}L$. The fluid is initially at a temperature $T_0$. Then, it is heated at the bottom wall with a constant heat flux density $q_w$, while the upper surface, which is opened to the atmosphere at $T_\infty$, undergoes heat losses by forced convection. The convection flux is characterized by an average heat transfer coefficient $\bar{h}$.
+
+The side walls of the box are assumed to be perfectly insulated. Contrary to the side and bottom walls for which a no-slip condition $(u_\Gamma = v_\Gamma=0)$ is applied, the upper surface is a free surface directly in contact with the convective flow above. Hence a no-through flow condition is implemented for this surface:
+\begin{equation} \partiald{1}{u}{y} = 0 \qquad\text{and}\qquad v=0 \end{equation}
+A statistically stationary state is reached when the heat loss at the free surface balances the heat supply at the bottom of the box. We are interested in the value of the spatially-average temperature,
+\begin{equation} \langle T\rangle(t) = \frac{1}{\Omega_f}\int_{\Omega_f}T(\vec{x},t)dS \end{equation}
+One of the aims of this project is to determine the time needed to reach a certain average temperature for two modes of operation. First, a configuration where the entire domain is filled with fluid will be studied; the mixing in the box is then solely performed by natural convection. Next a mixer will be introduced in the flow.
+
+The mixer will be taken into account using a penalization method. Inside the body, an extra source term is added to the momentum equation in order to force the flow velocity $\vec{v}$ to match the velocity of the body $\vec{v}_s$. The same strategy is used to impose the temperature of the mixer, $T_s$. At each time step, the temperature of the mixer is assumed to be equal to the spatially averaged fluid temeprature $\langle T\rangle\rvert_{cyl}(t)$ performed on the cylinder of diameter $D$ delimited by the blade's tip of the mixer; i.e. $T_s(t) = \langle T\rangle\rvert_{cyl}(t)$. This approximation is a simplification of the more complex heat transfer phenomena between the mixer and the fluid. The solid domain $\Omega_s$ where these source terms are added is specified using a mask function, $\chi$ defined as
+\begin{equation} \chi = \left\{ \begin{aligned} 1 & \text{ for } \vec{x}\in\Omega_s \\ 0 & \text{ elsewhere}\end{aligned}\right. \end{equation}
+
+We will make us of the Boussinesq approximation: the change of density is only taken into account via a buoyancy term in the momentum equation, while the flow is still assumed incompressible. Moreover, the Eckert number will be assumed very small:
+\begin{equation} Ec = \frac{U^2}{c_p\Delta T} << 1 \end{equation}
+so that the viscous dissipation can be neglected in the energy equation.
+
+The equation to solve are then obtained as:
+\begin{align}
+        \div\vec{v} &= 0 \label{eq:tosolve1}\\
+        \matder{\vec{v}} &= -\grad P + \nu\lapl\vec{v} - \beta(T-T_0)\vec{g} - \chi\frac{(\vec{v}-\vec{v}_s)}{\Delta \tau} \label{eq:tosolve2}\\
+        \matder{T} &= \alpha\lapl T - \chi\frac{(T-T_s)}{\Delta \tau} \label{eq:tosolve3}
+\end{align}
+with $\nu = \frac{\mu}{\rho_0}$ the kinematic viscosity, $P=\frac{(p-p_\mathrm{ref})+\rho_0gy}{\rho_0}$ the reduced pressure ($p_\mathrm{ref}$ is any reference pressure), $\vec{g} = -g\hat{e}_y$ the gravitational acceleration, $\beta = -\frac{1}{\rho_0}\partiald{1}{\rho}{T}\rvert_0$ the fluid expansion coefficient and $\Delta\tau$ a parameter to fix, and with dimension of time (the smaller $\Delta\tau$, the better the presence of the mixer into the flow is taken into account).
+
+The fluid Prandtl number is taken as $Pr = \frac{\nu}{\alpha} = 2.0$. We define that the heat flux density at the bottom wall is $q_w = \frac{k\Delta T}{H}$: this defines the reference temperature difference $\Delta T$. We also define the reference velocity $U=\sqrt{\beta g\Delta TH}$. The Grashof number is $Gr = \left(\frac{UH}{\nu}\right)^2 = \num{2.0e10}$. The convective heat transfer at the top surface can also be written as
+\begin{equation} \partiald{1}{T}{y} + \frac{1}{l_0}(T-T_\infty) = 0 \end{equation}
+where $l_0 = \frac{k}{h}$ has the dimension of a length. We assume that $l_0 = \num{1.0e-3}H$. The temperature of the convective flow above is such that $\frac{T_0-T_\infty}{\Delta T} = \num{5.0e-3}$.
+
+In order to integrate equations (\ref{eq:tosolve1}), (\ref{eq:tosolve2}), (\ref{eq:tosolve3}), we use a two-step projection scheme combined with a MAC mesh. The convective terms are integrated using the Adams-Bashforth scheme of order 2 (with the explicit Euler scheme for the first step) while the diffusive terms are integrated using the explicit Euler scheme. Hence, the numerical scheme is:
+\begin{align}
+    \frac{(\vec{v}^*-\vec{v}^n)}{\Delta t} &= -\frac{1}{2}(3\vec{H}^n-\vec{H}^{n-1}) - \grad_nP^n + \nu\lapl_n\vec{v}^n - \beta(T^n-T_0)\vec{g} - \chi\frac{(\vec{v}^*-\vec{v}_s^{n+1})}{\Delta\tau} \\
+    \lapl_h\Phi &= \frac{1}{\Delta t}\vec{\nabla}_h\cdot\vec{v}^* \label{eq:poisson}\\
+    \frac{(\vec{v}^{n+1}-\vec{v}^*)}{\Delta t} &= -\grad_h\Phi \\
+    P^{n+1} &= P^n + \Phi \\
+    \frac{(T^{n+1}-T^n)}{\Delta t} &= -\frac{1}{2}(3H^n_T - H^{n-1}_T) + \alpha\lapl_hT^n - \chi\frac{(T^{n+1}-T_s^{n+1})}{\Delta\tau}
+\end{align}
+where $\vec{H}$ is the convective term of the momentum equation and $H_T$ is the convective term of the energy equation.
+
+The Poisson equation (\ref{eq:poisson}) is solved using the over-relaxed Gauss-Seidel algorithm (SOR):
+\begin{align} 
+    \Phi_{i,j}^* &= \frac{1}{2}\frac{(\Delta x)^2(\Delta y)^2}{\left((\Delta x)^2 + (\Delta y)^2\right)}\left(-\frac{1}{\Delta t}(\vec{\nabla}_h\cdot\vec{v}^*)_{i,j} + \frac{(\Phi^k_{i+1,j} + \Phi^{k+1}_{i-1,j})}{(\Delta x)^2} + \frac{(\Phi^k_{i,j+1} + \Phi^{k+1}_{i,j-1})}{(\Delta y)^2}\right), \\
+    \Phi^{k+1}_{i,j} &= \alpha\Phi^*_{i,j} + (1-\alpha)\Phi^k_{i,j},
+\end{align}
+with $1 \leq \alpha < 2$ the relaxation parameter ($\alpha = 1.97 - 1.98$ should provide an optimal convergence rate). The local residual of the Poisson equation is defined as:
+\begin{equation} R^{k+1}_{i,j} = (\lapl_h\Phi)_{i,j} - \frac{1}{\Delta t}(\vec{\nabla}_h\cdot\vec{v}^*)_{i,j}. \end{equation}
+The global error on the solution of the Poisson equation is defined as:
+\begin{equation} e^{k+1} = \Delta t\frac{H}{U}\sqrt{\frac{1}{LH}\sum_i^{n_x}\sum_j^{n_y}(R_{i,j}^{k+1})^2\Delta x \Delta y}, \end{equation}
+This diagnostic must be evaluated at every time step in order to ensure the convergence of the iterative process.
+
+We will here use a mesh with $\Delta x = \Delta y = h$, where $h$ fulfills a constraint on the precision of the solution, that is to say that $Re_h = \frac{(|u|+|v|)h}{\nu}$ must be ``sufficiently moderate''. The time step $\Delta t$ is chosen so that the stability of the problem is ensured (in which the factors $r = \frac{\nu\Delta t}{h^2}$ and $CFL = \frac{(|u|+|v|)\Delta t}{h} = rRe_h$ are involved). The parameter $\Delta\tau$ is chosen relatively to the time step: $\frac{\Delta t}{\Delta\tau}$ is taken as a large number (e.g., \num{1.0e3}).
+
+For flows with large local gradients of the computed quantities, a more appropriate definite of the ``mesh Reynolds number'' is that based on the vorticity: $Re_{h,\omega} = \frac{|\omega|h^2}{\nu}$. Acceptable values for quality simulations are $Re_{h,\omega} \leq 40$, and $Re_h \leq 25$. Hence, we will monitor the maximum value of $Re_h$ and $Re_{h,\omega}$ of our simulations as a function of time.
+
+Two cases will be considered:
+\begin{enumerate}
+    \item In a first step, the entire domain is filled with fluid ($\Omega = \Omega_f$); thus the mixing in the box is solely performed by natural convection.
+    \item In a second step, a mixer is introduced, with its center located at $x_g = y_g = \frac{L}{2}$. The solid domain $\Omega_s$ consists of the superposition of a three-petals rose of diameter $D = 2a = \frac{3}{5}L$ and of equation $r=a\cos(3\theta)$, and of a disk of diameter $d=\frac{D}{5}$. The angular velocity of the mixer is set to $\frac{\omega_sH}{U} = \num{1.0e-1}$.
+\end{enumerate}
+
+\section{Numerical code}
+\section{First case: without mixer}
+\section{Second case: with a mixer}
+\section{Conclusion}
 
 \end{document}
 
