@@ -69,6 +69,7 @@ dkms.conf
 *.cb
 *.cb2
 report/*.pdf
+report/figures/*.pdf
 
 ## Intermediate documents:
 *.dvi
