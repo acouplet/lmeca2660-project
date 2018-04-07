@@ -9,19 +9,31 @@
 \usepackage{fullpage}
 \usepackage{comment}
 \usepackage{siunitx}
+\usepackage{biblatex}
 
-\usetikzlibrary{external}
+\usetikzlibrary{external,arrows}
 \tikzexternalize[prefix=figures/]
 \usepgfplotslibrary{colorbrewer}
 \usepgfplotslibrary{groupplots}
 \pgfplotsset{compat=1.15}
 \pgfplotsset{cycle list/Set1}
 
+\bibliography{bibliography}
+
 \newcommand\partiald[3]{\frac{\partial\ifnum#1>1 ^{#1}\fi #2}{\partial #3\ifnum#1>1 ^{#1}\fi}}
 \newcommand\matder[1]{\frac{D#1}{Dt}}
 \renewcommand\div{\vec{\nabla}\cdot}
 \newcommand\lapl{\vec{\nabla}^2}
 \newcommand\grad{\vec{\nabla}}
+
+% Macro to strech matrices: \begin{pmatrix}[1.5] ... \end{pmatrix}
+\makeatletter
+\renewcommand*\env@matrix[1][\arraystretch]{%
+    \edef\arraystretch{#1}%
+    \hskip -\arraycolsep
+    \let\@ifnextchar\new@ifnextchar
+    \array{*\c@MaxMatrixCols c}}
+\makeatother
 
 \subject{LMECA2660 - Numerical Methods in Fluid Mechanics}
 \title{Project: Numerical study of the heating of a fluid in a box}
@@ -59,7 +71,7 @@ where $l_0 = \frac{k}{h}$ has the dimension of a length. We assume that $l_0 = \
 
 In order to integrate equations (\ref{eq:tosolve1}), (\ref{eq:tosolve2}), (\ref{eq:tosolve3}), we use a two-step projection scheme combined with a MAC mesh. The convective terms are integrated using the Adams-Bashforth scheme of order 2 (with the explicit Euler scheme for the first step) while the diffusive terms are integrated using the explicit Euler scheme. Hence, the numerical scheme is:
 \begin{align}
-    \frac{(\vec{v}^*-\vec{v}^n)}{\Delta t} &= -\frac{1}{2}(3\vec{H}^n-\vec{H}^{n-1}) - \grad_nP^n + \nu\lapl_n\vec{v}^n - \beta(T^n-T_0)\vec{g} - \chi\frac{(\vec{v}^*-\vec{v}_s^{n+1})}{\Delta\tau} \\
+    \frac{(\vec{v}^*-\vec{v}^n)}{\Delta t} &= -\frac{1}{2}(3\vec{H}^n-\vec{H}^{n-1}) - \grad_nP^n + \nu\lapl_n\vec{v}^n - \beta(T^n-T_0)\vec{g} - \chi\frac{(\vec{v}^*-\vec{v}_s^{n+1})}{\Delta\tau} \label{eq:flow_solving1}\\
     \lapl_h\Phi &= \frac{1}{\Delta t}\vec{\nabla}_h\cdot\vec{v}^* \label{eq:poisson}\\
     \frac{(\vec{v}^{n+1}-\vec{v}^*)}{\Delta t} &= -\grad_h\Phi \\
     P^{n+1} &= P^n + \Phi \\
@@ -89,9 +101,81 @@ Two cases will be considered:
 \end{enumerate}
 
 \section{Numerical code}
+\subsection{The MAC grid \label{sec:MACgrid}}
+The problem is solved on a staggered ``marker and cell'' (MAC) mesh (first described in \cite{harlow1965numerical}). A two-dimensional MAC grid cell (Figure~\ref{fig:MACgrid}) defines the $x$ component of a cell's velocity on the vertical faces and the $y$ component on the horizontal faces. Pressure and temperature are defined at the center of the MAC cells. We use a half index notation, so for cell $(i,j)$ in two dimensions we have $P_{i,j}$ and $T_{i,j}$ at the center, and $u_{i-\frac{1}{2},j}$, $u_{i+\frac{1}{2},j}$, $v_{i,j-\frac{1}{2}}$ and $v_{i,j+\frac{1}{2}}$ normal to the faces. MAC meshes are also well suited for solid wall boundaries and free surface boundaries. Solid wall boundaries involve setting the normal velocity on a boundary to zero or $\vec{v}\cdot\hat{n} = 0$. This is trivial for grid aligned solids on a MAC grid since velocities are stored perpendicular to cell faces.
+\begin{figure}[ht]\centering
+    \tikzsetnextfilename{MACgrid} 
+    \begin{tikzpicture}[font=\tiny]
+        \foreach \i in {0,...,4}{
+            \draw[very thin,gray,dashed] (1.5*\i,-0.3) -- (1.5*\i,6.3);
+            \draw[very thin,gray,dashed] (-0.3,1.5*\i) -- (6.3,1.5*\i);
+        }
+        \foreach \i in {0,...,2}{
+            \foreach \j in {0,...,2}{
+                \node[red] at (\i*3,\j*3) {\normalsize$\times$};
+            }
+        }
+        \foreach \i in {0,...,1}{
+            \draw[black] (3*\i+1.5,-0.3) -- (3*\i+1.5,6.3);
+            \draw[black] (-0.3,3*\i+1.5) -- (6.3,3*\i+1.5);
+            \foreach \j in {0,...,2}{
+                \node[blue] at (\i*3+1.5,\j*3) {\normalsize$\circ$};
+                \draw[blue,->] (\i*3+1.5-0.3,\j*3) -- (\i*3+1.5+0.3,\j*3);
+                \node[green] at (\j*3,\i*3+1.5) {\normalsize$\square$};
+                \draw[green,->] (\j*3,\i*3++1.5-0.3) -- (\j*3,\i*3+1.5+0.3);
+            }
+        }
+
+        \node[left,gray] at (-0.3,0) {$j+1$};
+        \node[left,gray] at (-0.3,1.5) {$j+\frac{1}{2}$};
+        \node[left,gray] at (-0.3,3) {$j$};
+        \node[left,gray] at (-0.3,4.5) {$j-\frac{1}{2}$};
+        \node[left,gray] at (-0.3,6) {$j-1$};
+        \node[below,gray] at (0,-0.3) {$i-1$};
+        \node[below,gray] at (1.5,-0.3) {$i-\frac{1}{2}$};
+        \node[below,gray] at (3,-0.3) {$i$};
+        \node[below,gray] at (4.5,-0.3) {$i+\frac{1}{2}$};
+        \node[below,gray] at (6,-0.3) {$i+1$};
+        \node[above right,red] at (0,0) {$P_{i-1,j+1}$};
+        \node[above right,red] at (3,0) {$P_{i,j+1}$};
+        \node[above right,red] at (6,0) {$P_{i+1,j+1}$};
+        \node[above right,red] at (0,3) {$P_{i-1,j}$};
+        \node[above right,red] at (3,3) {$P_{i,j}$};
+        \node[above right,red] at (6,3) {$P_{i+1,j}$};
+        \node[above right,red] at (0,6) {$P_{i-1,j-1}$};
+        \node[above right,red] at (3,6) {$P_{i,j-1}$};
+        \node[above right,red] at (6,6) {$P_{i+1,j-1}$};
+        \node[above right,blue] at (1.5,0) {$u_{i-\frac{1}{2},j+1}$};
+        \node[above right,blue] at (4.5,0) {$u_{i+\frac{1}{2},j+1}$};
+        \node[above right,blue] at (1.5,3) {$u_{i-\frac{1}{2},j}$};
+        \node[above right,blue] at (4.5,3) {$u_{i+\frac{1}{2},j}$};
+        \node[above right,blue] at (1.5,6) {$u_{i-\frac{1}{2},j-1}$};
+        \node[above right,blue] at (4.5,6) {$u_{i+\frac{1}{2},j-1}$};
+        \node[above right,green] at (0,1.5) {$v_{i-1,j+\frac{1}{2}}$};
+        \node[above right,green] at (0,4.5) {$v_{i-1,j-\frac{1}{2}}$};
+        \node[above right,green] at (3,1.5) {$v_{i,j+\frac{1}{2}}$};
+        \node[above right,green] at (3,4.5) {$v_{i,j-\frac{1}{2}}$};
+        \node[above right,green] at (6,1.5) {$v_{i+1,j+\frac{1}{2}}$};
+        \node[above right,green] at (6,4.5) {$v_{i+1,j-\frac{1}{2}}$};
+
+    \end{tikzpicture}
+    \caption{Staggered ``marker and cell'' (MAC) mesh}
+    \label{fig:MACgrid}
+\end{figure}
+\subsection{The equations}
+We now rewrite the equations needed to solve the problem in order to easily put them in our code. We have to take into account the particularities of the MAC grid and the used integration schemes. For the convective terms we use the Adams-Bashforth scheme of order 2 (with the explicit Euler scheme for the first step) while the diffusive terms are integrated using the explicit Euler scheme.
+\paragraph{Equation (\ref{eq:flow_solving1})}
+We start by detailing every term of equation (\ref{eq:flow_solving1}):
+\begin{equation} \underbrace{\frac{(\vec{v}^*-\vec{v}^n)}{\Delta t}}_{(1)} = \underbrace{-\frac{1}{2}(3\vec{H}^n-\vec{H}^{n-1})}_{(2)} - \underbrace{\grad_nP^n}_{(3)} + \underbrace{\nu\lapl_n\vec{v}^n}_{(4)} - \underbrace{\beta(T^n-T_0)\vec{g}}_{(5)} - \underbrace{\chi\frac{(\vec{v}^*-\vec{v}_s^{n+1})}{\Delta\tau}}_{(6)} \label{eq:ns1}\end{equation}
+Term (\ref{eq:ns1}.1) corresponds to the time-dependent component of the inertial term. We can rewrite it as
+\begin{equation} \begin{pmatrix}[2] \frac{(u^*_{i+\frac{1}{2},j} - u^n_{i+\frac{1}{2},j})}{\Delta t} \\ \frac{(v^*_{i,j+\frac{1}{2}} - v^n_{i,j+\frac{1}{2}})}{\Delta t} \end{pmatrix} \end{equation}
+Term (\ref{eq:ns1}.2) corresponds to the convective component of the inertial term. First we need to write out $\vec{H}$.  This term can take both the advective form ($(\vec{\nabla}\vec{v})\cdot\vec{v}$) and the divergence form ($\vec{\nabla}\cdot(\vec{v}\vec{v})$). The skew-symmetric form is the combination of these two previous forms. This form conserves the kinetic eneryg when $\nu=0$ and conserves the momentum when the continuity is satisfied. The advective form of Kajishima is written as
 \section{First case: without mixer}
 \section{Second case: with a mixer}
 \section{Conclusion}
+\section{References}
+\printbibliography
+
 
 \end{document}
 

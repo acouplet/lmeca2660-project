@@ -68,7 +68,7 @@ dkms.conf
 *.fot
 *.cb
 *.cb2
-report/pdf/*
+report/*.pdf
 
 ## Intermediate documents:
 *.dvi
