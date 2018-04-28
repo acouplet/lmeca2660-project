@@ -77,6 +77,8 @@ void free_matrix(double **m, long NR){
 	free(m);
 }
 
+
+
 double *linspace(double start, double end, long N){
 	int i;
 	double *v, delta;
