@@ -77,6 +77,13 @@ void free_matrix(double **m, long NR){
 	free(m);
 }
 
+void copy_matrix(double **m, double **o, long NR, long NC){
+    long i,j;
+    for(i=0;i<NR;i++)
+        for(j=0;j<NC;j++)
+            o[i][j] = m[i][j];
+}
+
 
 
 double *linspace(double start, double end, long N){
@@ -103,5 +110,43 @@ void MatrixToFile(FILE *f, double **m, int NR, int NC){
 		fprintf(f,"%lf\n",m[i][j]);
 	}
 }
+
+double NS_pressurex(int i,int j,double **P,double h){
+    return (P[i-1][j]-P[i-1][j-1])/h;
+}
+
+double NS_pressurey(int i, int j, double **P, double h){
+    return (P[i-1][j-1]-P[i][j-1])/h;
+}
+
+
+double NS_diffusionx(int i, int j, double **u, double h){
+    return (u[i][j+1]-2*u[i][j]+u[i][j-1])/(h*h) + (u[i-1][j]-2*u[i][j]+u[i+1][j])/(h*h);
+}
+
+double NS_diffusiony(int i, int j, double **v, double h){
+    return (v[i][j+1]-2*v[i][j]+v[i][j-1])/(h*h) + (v[i-1][j]-2*v[i][j]+v[i+1][j])/(h*h);
+}
+
+double NS_buoyancy(int i, int j, double **T){
+    return (T[i-1][j-1] + T[i][j-1])/2;
+}
+
+double NS_convectionx(int i, int j, double **u, double **v, double h){
+    double adv1 = (1/(4*h))*((u[i][j-1]+u[i][j])*(u[i][j-1]-u[i][j]) + (u[i][j]+u[i][j+1])*(u[i][j]-u[i][j+1]));
+    double adv2 = (1/(4*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]-u[i][j]) + (v[i][j+1]+v[i][j])*(u[i][j]-u[i+1][j]));
+    double div1 = (1/(4*h))*((u[i][j+1]+u[i][j])*(u[i][j+1]+u[i][j]) - (u[i][j]+u[i][j-1])*(u[i][j]+u[i][j-1]));
+    double div2 = (1/(4*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]+u[i][j]) - (v[i][j+1]+v[i][j])*(u[i][j]+u[i+1][j]));
+    return 0.5*(adv1+adv2) + 0.5*(div1+div2);
+}
+
+double NS_convectiony(int i, int j, double **u, double **v, double h){
+    double adv1 = (1/(4*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]-v[i][j]) + (u[i][j-1]+u[i+1][j-1])*(v[i][j]-v[i-1][j]));
+    double adv2 = (1/(4*h))*((v[i-1][j]+v[i][j])*(v[i-1][j]-v[i][j]) + (v[i][j]+v[i+1][j])*(v[i][j]-v[i+1][j]));
+    double div1 = (1/(4*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]+v[i][j]) - (u[i][j-1]+u[i+1][j-1])*(v[i][j]+v[i][j-1]));
+    double div2 = (1/(4*h))*((v[i-1][j]+v[i][j])*(v[i-1][j]+v[i][j]) - (v[i][j]+v[i+1][j])*(v[i][j]+v[i+1][j]));
+    return 0.5*(adv1+adv2) + 0.5*(div1+div2);
+}
+
 	
 	
