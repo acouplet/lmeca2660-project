@@ -129,7 +129,7 @@ double NS_diffusiony(int i, int j, double **v, double h){
 }
 
 double NS_buoyancy(int i, int j, double **T){
-    return (T[i-1][j-1] + T[i][j-1])/2;
+    return (T[i][j] + T[i+1][j])/2;
 }
 
 double NS_convectionx(int i, int j, double **u, double **v, double h){
