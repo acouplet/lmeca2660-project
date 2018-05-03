@@ -17,11 +17,11 @@ const double g = 9.81;
 int main(){	
 	clock_t begin = clock();
 
-    int Nx       = 8;
-    int Ny       = 12;
+    int Nx       = 200;
+    int Ny       = 300;
     double h     = 1.0/Ny;
     double Pr    = 2.0;
-    double dt    = 1e-2;
+    double dt    = 0.1;
     double dtau  = dt/1e3;
     double l0    = 1e-3;
     double Tinf  = -5e-3;
@@ -48,9 +48,13 @@ int main(){
     double **R       = matrix(Ny,Nx);
     double **HnpT    = matrix(Ny,Nx);
 
-    F(i,Ny) F(j,Nx) P[i][j] = g*(Ny-i-0.5)*h; // Probably wrong, any idea how to make initial P dimensionless
+	FILE *fP = fopen("data/P_400_600.csv","w");
+	FILE *fT = fopen("data/T_400_600.csv","w");
+	FILE *fu = fopen("data/u_400_600.csv","w");
+	FILE *fv = fopen("data/v_400_600.csv","w");
+    //F(i,Ny) F(j,Nx) P[i][j] = g*(Ny-i-0.5)*h; // Probably wrong, any idea how to make initial P dimensionless
 
-    for(int k = 0; k<1000; k++){
+    F(k,10000){
     //================//
     // First equation //
     //================//
@@ -91,19 +95,19 @@ int main(){
     //============//
     FR(j,1,Nx+1){
         T[Ny+1][j] = T[Ny][j] + h; // Ghost point, bottom heat transfer
-        T[0][j] = (T[1][j]*(2*l0-h) + 2*Tinf*h)/(2*l0+h);
+        T[0][j] = (-h/l0)*(1.5*T[1][j] - 0.5*T[2][j] - Tinf) + T[1][j];
     }
 
     Tavg = 0.0;
     Trms = 0.0;
     FR(i,1,Ny+1){
         FR(j,1,Nx+1){
-            double H = (T[i][j+1]-T[i][j-1])*(u[i][j]+u[i][j-1])/(2*h) + (T[i-1][j] - T[i+1][j])*(v[i-1][j]+v[i][j])/(2*h);
-            double Tn1 = -0.5*(3*H - HnpT[i-1][j-1]);
+            double H       = (T[i][j+1]-T[i][j-1])*(u[i][j]+u[i][j-1])/(2*h) + (T[i-1][j] - T[i+1][j])*(v[i-1][j]+v[i][j])/(2*h);
+            double Tn1     = -0.5*(3*H - HnpT[i-1][j-1]);
             HnpT[i-1][j-1] = H;
-            Tn1 += (1/(Pr*sqrt(Gr)*h*h))*((T[i][j+1]-2*T[i][j]+T[i][j-1])+(T[i-1][j]-2*T[i][j]+T[i+1][j]));
-            T[i][j] = dt*Tn1 + T[i][j];
-            Tavg += T[i][j];
+            Tn1           += (1/(Pr*sqrt(Gr)*h*h))*((T[i][j+1]-2*T[i][j]+T[i][j-1])+(T[i-1][j]-2*T[i][j]+T[i+1][j]));
+            T[i][j]        = dt*Tn1 + T[i][j];
+            Tavg          += T[i][j];
         }
     }
     Tavg /= Nx*Ny;
@@ -178,11 +182,20 @@ int main(){
             printf("%.4lf\t",T[i][j]);
         printf("\n");
     }
+    
+    
+    MatrixToFile(fP, P, Ny, Nx);
+    MatrixToFile(fT, T, Ny+2, Nx+2);
+    MatrixToFile(fu, u, Ny+2, Nx+1);
+    MatrixToFile(fv, v, Ny+1, Nx+2);
 
     }
 
 
-
+	fclose(fP);
+	fclose(fT);
+	fclose(fu);
+	fclose(fv);
     free_matrix(P,Ny);
     free_matrix(T,Ny+2);
     free_matrix(u,Ny+2);
