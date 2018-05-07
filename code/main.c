@@ -17,7 +17,7 @@ const double g = 9.81;
 int main(){	
 	clock_t begin = clock();
 
-    int Nx       = 4;
+    int Nx       = 400;
     int Ny       = 1.5*Nx;
     double h     = 1.0/Ny;
     double Pr    = 2.0;
@@ -54,7 +54,7 @@ int main(){
 	FILE *fu = fopen("data/u_400_600.csv","w");
 	FILE *fv = fopen("data/v_400_600.csv","w");
     
-    F(k,10000){
+    F(k,1000){
     //================//
     // First equation //
     //================//
@@ -183,12 +183,13 @@ int main(){
     printf("Tavg = %.4lf\n",Tavg);
     printf("Trms = %.4lf\n",Trms);
 
-	
+	/*
     FR(i,0,Ny+2){
         FR(j,0,Nx+2)
             printf("%.4lf\t",T[i][j]);
         printf("\n");
     }
+    */
     
     
     MatrixToFile(fP, P, Ny, Nx);
