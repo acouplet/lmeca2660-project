@@ -3,6 +3,7 @@
 vgcore.*
 *.csv
 *.mat
+*.avi
 
 ### C ###
 # Prerequisites

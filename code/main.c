@@ -14,20 +14,29 @@
 const int debug = 0;
 const double g = 9.81;
 
-int main(){	
+int main(int argc, char *argv[]){	
 	clock_t begin = clock();
 
-    int Nx       = 400;
+    int Nx       = 12;
     int Ny       = 1.5*Nx;
     double h     = 1.0/Ny;
     double Pr    = 2.0;
-    double dt    = 0.1;
+    double dt    = 0.01;
     double dtau  = dt/1e3;
     double l0    = 1e-3;
     double Tinf  = -5e-3;
     double Gr    = 2.0e10;
     double alpha = 1.97;
+    int miter    = 300;
 	double H;
+	
+	if (argc == 4){ 
+		Nx    = atoi(argv[1]);
+		Ny    = 1.5*Nx;
+		h     = 1.0/Ny;
+		dt    = 1/(double)atoi(argv[2]);
+		miter = atoi(argv[3]);
+	}
 
     double sumR      = 0.0;
     double globe     = 0.0;
@@ -42,19 +51,18 @@ int main(){
     double **v       = matrix(Ny+1,Nx+2);
     double **ustar   = matrix(Ny+2,Nx+1);
     double **vstar   = matrix(Ny+1,Nx+2);
-    double **Hnpx    = matrix(Ny,Nx); // Change to Nx-1
-    double **Hnpy    = matrix(Ny,Nx); // Change to Ny-1
-    double **Phi     = matrix(Ny+2,Nx+2); // Change to (Ny,Nx)
-    double **Phistar = matrix(Ny+2,Nx+2); // Change to (Ny,Nx)
+    double **Hnpx    = matrix(Ny,Nx);
+    double **Hnpy    = matrix(Ny,Nx);
+    double **Phi     = matrix(Ny+2,Nx+2); 
+    double **Phistar = matrix(Ny+2,Nx+2);
     double **R       = matrix(Ny,Nx);
     double **HnpT    = matrix(Ny,Nx);
-
-	FILE *fP = fopen("data/P_400_600.csv","w");
-	FILE *fT = fopen("data/T_400_600.csv","w");
-	FILE *fu = fopen("data/u_400_600.csv","w");
-	FILE *fv = fopen("data/v_400_600.csv","w");
     
-    F(k,1000){
+    char filename[54];
+	FILE *fPb,*fTb,*fub,*fvb;
+
+
+    F(k,miter){
     //================//
     // First equation //
     //================//
@@ -76,13 +84,16 @@ int main(){
             ustar[i][j]    = dt*ustar[i][j] + u[i][j];
         }
     }
-    F(j,Nx+1) { ustar[0][j] = ustar[1][j]; ustar[Ny+1][j] = ustar[Ny][j]; } // WRONG, SEE CORRECTED ABOVE
+    
+    F(j,Nx+1) { ustar[0][j] = ustar[1][j]; // Ghost points, no-through flow
+				ustar[Ny+1][j] = -0.2*(ustar[Ny-2][j] - 5*ustar[Ny-1][j] + 15*ustar[Ny][j]); }
+    //F(j,Nx+1) { ustar[0][j] = ustar[1][j]; ustar[Ny+1][j] = ustar[Ny][j]; } // WRONG, SEE CORRECTED ABOVE
 
     FR(i,1,Ny){
         FR(j,1,Nx+1){
             vstar[i][j]    = -1*NS_pressurey(i,j,P,h);
             vstar[i][j]   += (1/sqrt(Gr))*NS_diffusiony(i,j,v,h);
-            vstar[i][j]   -= NS_buoyancy(i,j,T);
+            vstar[i][j]   += NS_buoyancy(i,j,T);
             H       	   = NS_convectiony(i,j,u,v,h);
             vstar[i][j]   -= 0.5*(3*H - Hnpy[i-1][j-1]);
             Hnpy[i-1][j-1] = H;
@@ -112,7 +123,7 @@ int main(){
             Tavg          += T[i][j];
         }
     }
-    Tavg /= Nx*Ny;
+    Tavg /= 1.5;
     FR(i,1,Ny+1) FR(j,1,Nx+1) Trms += (T[i][j] - Tavg)*(T[i][j] - Tavg);
     Trms /= Nx*Ny;
     FR(i,1,Ny+1){
@@ -139,7 +150,6 @@ int main(){
         sumR = 0;
         F(i,Ny){
             F(j,Nx){
-				// VERIFY INDICES
                 R[i][j] = (Phi[i+2][j+1]-2*Phi[i+1][j+1]+Phi[i][j+1])/(h*h) + (Phi[i+1][j+2]-2*Phi[i+1][j+1]+Phi[i+1][j])/(h*h) - 1/dt*((ustar[i+1][j+1]-ustar[i+1][j])/h + (vstar[i][j+1]-vstar[i+1][j+1])/h);
                 sumR += R[i][j]*R[i][j];
             }
@@ -182,28 +192,43 @@ int main(){
     printf("SOR Iterations = %d\n",iter);
     printf("Tavg = %.4lf\n",Tavg);
     printf("Trms = %.4lf\n",Trms);
+    printf("%d\n",k);
 
-	/*
-    FR(i,0,Ny+2){
-        FR(j,0,Nx+2)
-            printf("%.4lf\t",T[i][j]);
-        printf("\n");
+    if ((k%50) == 0) {
+        if (k != 0){
+            fclose(fPb);
+            fclose(fTb);
+            fclose(fub);
+            fclose(fvb);
+        }
+        sprintf(filename,"data/P_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
+	    fPb = fopen(filename,"wb");  // w for write, b for binary
+        sprintf(filename,"data/T_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
+        fTb = fopen(filename,"wb");  // w for write, b for binary
+        sprintf(filename,"data/u_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
+        fub = fopen(filename,"wb");  // w for write, b for binary
+        sprintf(filename,"data/v_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
+        fvb = fopen(filename,"wb");  // w for write, b for binary
+        F(i,Ny+2)
+            fwrite(T[i],sizeof(T[i][0]),Nx+2,fTb);
     }
+
+	//F(i,Ny)
+	//	fwrite(P[i],sizeof(P[i][0]),Nx,fPb);
+
+    /*
+	F(i,Ny+2)
+		fwrite(u[i],sizeof(u[i][0]),Nx+1,fub);
+	F(i,Ny+1)
+		fwrite(v[i],sizeof(v[i][0]),Nx+2,fvb);
     */
     
-    
-    MatrixToFile(fP, P, Ny, Nx);
-    MatrixToFile(fT, T, Ny+2, Nx+2);
-    MatrixToFile(fu, u, Ny+2, Nx+1);
-    MatrixToFile(fv, v, Ny+1, Nx+2);
-
     }
-
-
-	fclose(fP);
-	fclose(fT);
-	fclose(fu);
-	fclose(fv);
+    
+	fclose(fPb);
+	fclose(fTb);
+	fclose(fub);
+	fclose(fvb);
     free_matrix(P,Ny);
     free_matrix(T,Ny+2);
     free_matrix(u,Ny+2);
@@ -220,5 +245,5 @@ int main(){
 	
 	clock_t end = clock();
 	printf("Total time %lf ms\n",(double)(end - begin) / CLOCKS_PER_SEC * 1000);
-	printf("SOR time %lf ms (%.2lf of total time)\n",SORtime, SORtime/(double)(end-begin));
+	printf("SOR time %lf ms (%.3lf of total time)\n",SORtime, SORtime/((double)(end-begin) / CLOCKS_PER_SEC * 1000));
 }
