@@ -133,6 +133,7 @@ double NS_buoyancy(int i, int j, double **T){
 }
 
 double NS_convectionx(int i, int j, double **u, double **v, double h){
+	// shouldn't it be (u[i][j]-u[i][j-1]) instead ? (and same later)
     double adv1 = (1/(4*h))*((u[i][j-1]+u[i][j])*(u[i][j-1]-u[i][j]) + (u[i][j]+u[i][j+1])*(u[i][j]-u[i][j+1]));
     double adv2 = (1/(4*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]-u[i][j]) + (v[i][j+1]+v[i][j])*(u[i][j]-u[i+1][j]));
     double div1 = (1/(4*h))*((u[i][j+1]+u[i][j])*(u[i][j+1]+u[i][j]) - (u[i][j]+u[i][j-1])*(u[i][j]+u[i][j-1]));
@@ -141,6 +142,7 @@ double NS_convectionx(int i, int j, double **u, double **v, double h){
 }
 
 double NS_convectiony(int i, int j, double **u, double **v, double h){
+	// error: (v[i][j]-v[i-1][j]))    should be    (v[i][j] - v[i][j-1])
     double adv1 = (1/(4*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]-v[i][j]) + (u[i][j-1]+u[i+1][j-1])*(v[i][j]-v[i-1][j]));
     double adv2 = (1/(4*h))*((v[i-1][j]+v[i][j])*(v[i-1][j]-v[i][j]) + (v[i][j]+v[i+1][j])*(v[i][j]-v[i+1][j]));
     double div1 = (1/(4*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]+v[i][j]) - (u[i][j-1]+u[i+1][j-1])*(v[i][j]+v[i][j-1]));
@@ -149,4 +151,4 @@ double NS_convectiony(int i, int j, double **u, double **v, double h){
 }
 
 	
-	
+// TODO: recheck divergence

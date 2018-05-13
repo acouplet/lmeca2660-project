@@ -1,6 +1,7 @@
 function plots(Nx, dt)
 close all;
 
+Nx = 15;
 X = linspace(0,1,Nx+2)
 Y = linspace(1.5,0,1.5*Nx+2)
 k = 0;
