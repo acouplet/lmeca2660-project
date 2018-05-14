@@ -29,8 +29,8 @@ while(1)
     
     contourf(X,Y,T,'LineStyle','none');
     hold on;
-    contourf(X(2:Nx+1),Y(2:1.5*Nx+1),mixer,'LineStyle', 'none');
-    quiver(X, Y, [ux;zeros(1,Nx+2)],[uy,zeros(Nx*1.5+2,1)], 'k');
+    %contourf(X(2:Nx+1),Y(2:1.5*Nx+1),mixer,'LineStyle', 'none');
+    %quiver(X, Y, [ux;zeros(1,Nx+2)],[uy,zeros(Nx*1.5+2,1)], 'k');
     hold off;
     colorbar();
     caxis([-1e-2 1e-2]);

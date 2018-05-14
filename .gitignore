@@ -4,6 +4,8 @@ vgcore.*
 *.csv
 *.mat
 *.avi
+code/results/*
+code/data/*
 
 ### C ###
 # Prerequisites

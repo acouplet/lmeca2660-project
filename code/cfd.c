@@ -151,5 +151,13 @@ double NS_convectiony(int i, int j, double **u, double **v, double h){
     return 0.5*(adv1+adv2) + 0.5*(div1+div2);
 }
 
+int xi(double x, double y, double a, double mixerAngle) {
+    double xg = 1.0/3.0;
+    double yg = 1.0/3.0;
+    double theta = atan2(y-yg,x-xg);
+    double d = sqrt(pow(x-xg,2) + pow(y-yg,2));
+    return (d <= a*cos(3*theta + mixerAngle));
+}
+
 	
 // TODO: recheck divergence form

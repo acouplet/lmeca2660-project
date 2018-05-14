@@ -22,3 +22,5 @@ double  NS_diffusiony(int i, int j, double **v, double h);
 double  NS_buoyancy(int i, int j, double **T);
 double  NS_convectionx(int i, int j, double **u, double **v, double h);
 double  NS_convectiony(int i, int j, double **u, double **v, double h);
+
+int xi(double x, double y, double a, double mixerAngle);

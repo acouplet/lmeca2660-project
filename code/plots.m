@@ -1,4 +1,4 @@
-function plots(Nx, dt)
+function plots(Nx, dt, saveIter, mixer)
 close all;
 
 X = linspace(0,1,Nx+2)
@@ -9,20 +9,15 @@ v = VideoWriter('test.avi');
 v.FrameRate = 10;
 open(v)
 while(1)
-    fileID = fopen(sprintf('data/T_Nx%d_dt%d_iter%d.bin',Nx,dt,k))
+    fileID = fopen(sprintf('data/T_Nx%d_dt%d_iter%d_mixing%d.bin',Nx,dt,k,mixer))
     if(fileID == -1) break; end
-    caxis manual;
-    caxis([-1e-2 1e-2]);
     T = fread(fileID,[Nx+2,1.5*Nx+2],'double')';
-    size(X)
-    size(Y)
-    size(T)
     contourf(X,Y,T,'LineStyle','none');
     colorbar();
     title(sprintf('k = %d',k));
     writeVideo(v,getframe(1)); 
     fclose(fileID);
-    k = k + 50
+    k = k + saveIter;
 end
 
 
