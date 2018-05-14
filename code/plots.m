@@ -1,7 +1,6 @@
 function plots(Nx, dt)
 close all;
 
-Nx = 15;
 X = linspace(0,1,Nx+2)
 Y = linspace(1.5,0,1.5*Nx+2)
 k = 0;
@@ -15,13 +14,15 @@ while(1)
     caxis manual;
     caxis([-1e-2 1e-2]);
     T = fread(fileID,[Nx+2,1.5*Nx+2],'double')';
+    size(X)
+    size(Y)
+    size(T)
     contourf(X,Y,T,'LineStyle','none');
     colorbar();
     title(sprintf('k = %d',k));
     writeVideo(v,getframe(1)); 
-
     fclose(fileID);
-    k = k + 50;
+    k = k + 50
 end
 
 

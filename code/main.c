@@ -36,7 +36,7 @@ double divergence(double **u, double **v, double h, int Nx, int Ny){
 int main(int argc, char *argv[]){
 	clock_t begin = clock();
 
-    int Nx       = 200;
+    int Nx       = 100;
     int Ny       = 1.5*Nx;
     double h     = 1.0/Ny;
     double Pr    = 2.0;
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]){
     int usemixer = 1;
 	double H;
     // mixer radius
-    double a = 3/10 * Nx * h;
+    double a = 3./10. * Nx * h;
     double omega = 0.1; // U/H = 1 right? TO CHECK 
     double L = h*Nx;
 	
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
     double mixer_angle = 0;
     
     char filename[54];
-	FILE *fPb,*fTb,*fub,*fvb;
+	FILE *fPb,*fTb,*fub,*fvb,*fmix;
     FILE *debug_vstar, *debug_ustar;
 
     // diagnostics
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]){
         // compute the mixer mask
         double x, y, theta, d;
         double average_mixer_temp = 0;
-        int nmixer_temp;
+        int nmixer_temp = 0;
         FR(j, 0, Nx){
             FR(i, 0, Ny){
                 x = (j+1/2) * h; // 1/2 ? do we have to center the cell point
@@ -126,8 +126,10 @@ int main(int argc, char *argv[]){
 
         // update the mixer angle
         mixer_angle += dt * omega;   // H = 1 right?
-
+        
+        printf("%d circle\n", nmixer_temp);
         avg_temp_mixer[k] = average_mixer_temp / nmixer_temp;
+        printf("temp mixer %.6f\n", avg_temp_mixer[k]);
 
         
         //================//
@@ -305,6 +307,7 @@ int main(int argc, char *argv[]){
                 fclose(fTb);
                 fclose(fub);
                 fclose(fvb);
+                fclose(fmix);
             }
             sprintf(filename,"data/P_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
     	    fPb = fopen(filename,"wb");  // w for write, b for binary
@@ -314,6 +317,8 @@ int main(int argc, char *argv[]){
             fub = fopen(filename,"wb");  // w for write, b for binary
             sprintf(filename,"data/v_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
             fvb = fopen(filename,"wb");  // w for write, b for binary
+            sprintf(filename, "data/mix_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
+            fmix = fopen(filename,"wb");
             sprintf(filename,"data/ustar_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
             debug_ustar = fopen(filename, "wb");
             sprintf(filename,"data/vstar_Nx%d_dt%d_iter%d.bin",Nx,(int)(1/dt),k);
@@ -326,6 +331,9 @@ int main(int argc, char *argv[]){
                     fwrite(v[i],sizeof(T[i][0]),Nx+2,fvb);
                     fwrite(vstar[i],sizeof(T[i][0]),Nx+2,debug_vstar);
                 }
+            }
+            F(i,Ny){
+                fwrite(xhi[i], sizeof(xhi[0][0]), Nx, fmix);
             }
         }
 
@@ -345,6 +353,7 @@ int main(int argc, char *argv[]){
 	fclose(fTb);
 	fclose(fub);
 	fclose(fvb);
+    fclose(fmix);
 
 
     FILE * fd1, *fd2, *fd3, *fd4;
