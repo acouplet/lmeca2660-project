@@ -36,7 +36,7 @@ double divergence(double **u, double **v, double h, int Nx, int Ny){
 int main(int argc, char *argv[]){
 	clock_t begin = clock();
 
-    int Nx       = 50;
+    int Nx       = 200;
     int Ny       = 1.5*Nx;
     double h     = 1.0/Ny;
     double Pr    = 2.0;
@@ -47,7 +47,12 @@ int main(int argc, char *argv[]){
     double Gr    = 2.0e10;
     double alpha = 1.97;
     int miter    = 2000;
+    int usemixer = 1;
 	double H;
+    // mixer radius
+    double a = 3/10 * Nx * h;
+    double omega = 0.1; // U/H = 1 right? TO CHECK 
+    double L = h*Nx;
 	
 	if (argc == 4){ 
 		Nx    = atoi(argv[1]);
@@ -66,8 +71,12 @@ int main(int argc, char *argv[]){
     double SORtime   = 0.0;
     double **P       = matrix(Ny,Nx);
     double **T       = matrix(Ny+2,Nx+2);
+    double **T_tmp   = matrix(Ny+2,Nx+2);
     double **u       = matrix(Ny+2,Nx+1);
     double **v       = matrix(Ny+1,Nx+2);
+    // terme source du mixer
+    double **umixer  = matrix(Ny,Nx);
+    double **vmixer  = matrix(Ny,Nx);
     double **ustar   = matrix(Ny+2,Nx+1);
     double **vstar   = matrix(Ny+1,Nx+2);
     double **Hnpx    = matrix(Ny,Nx);
@@ -76,18 +85,51 @@ int main(int argc, char *argv[]){
     double **Phistar = matrix(Ny+2,Nx+2);
     double **R       = matrix(Ny,Nx);
     double **HnpT    = matrix(Ny,Nx);
+    double **xhi     = matrix(Ny,Nx);
+    double mixer_angle = 0;
     
     char filename[54];
 	FILE *fPb,*fTb,*fub,*fvb;
     FILE *debug_vstar, *debug_ustar;
 
     // diagnostics
-    double * average_temp = vector(miter);
-    double * rms_temp     = vector(miter);
+    double * average_temp   = vector(miter);
+    double * rms_temp       = vector(miter);
+    double * avg_temp_mixer = vector(miter);
+    double * avg_heat_flux  = vector(miter);
+    
 
 
     F(k,miter){
 
+        // compute the mixer mask
+        double x, y, theta, d;
+        double average_mixer_temp = 0;
+        int nmixer_temp;
+        FR(j, 0, Nx){
+            FR(i, 0, Ny){
+                x = (j+1/2) * h; // 1/2 ? do we have to center the cell point
+                y = (i+1/2) * h;
+                theta = atan2( y - L, x - L/2 );
+                d = sqrt( (x-L/2)*(x-L/2) + (y-L)*(y-L) );
+                // compute mask
+                xhi[i][j] = ( d <= a * cos(3*theta + mixer_angle) ) && usemixer;
+                // speed source of the mixer
+                // TO CHECK TO CHECK
+                umixer[i][j] = -sin(theta) * omega * d;
+                vmixer[i][j] =  cos(theta) * omega * d;
+                // check the inside of the cylinder
+                average_mixer_temp += T[i+1][j+1] * (d <= a);
+                nmixer_temp += (d <= a);
+            }
+        }
+
+        // update the mixer angle
+        mixer_angle += dt * omega;   // H = 1 right?
+
+        avg_temp_mixer[k] = average_mixer_temp / nmixer_temp;
+
+        
         //================//
         // First equation //
         //================//
@@ -106,7 +148,10 @@ int main(int argc, char *argv[]){
                 H       	   = NS_convectionx(i,j,u,v,h);
                 ustar[i][j]   -= 0.5*(3*H - Hnpx[i-1][j-1]);
                 Hnpx[i-1][j-1] = H;
-                ustar[i][j]    = dt*ustar[i][j] + u[i][j];
+                // vstar = 1 / (1 + xhi Dt/Dtau)   *  (vn + dt * blabla + xhi Dt/Dtau v_s)
+                // xsi calculé sur l'interieur du domaine
+                ustar[i][j]    = 1/(1 + xhi[i-1][j-1] * dt/dtau) * (u[i][j] + dt * ustar[i][j]  + xhi[i-1][j-1] * dt/dtau * umixer[i-1][j-1] );
+                // ustar[i][j]    = dt*ustar[i][j] + u[i][j];
             }
         }
         
@@ -122,7 +167,10 @@ int main(int argc, char *argv[]){
                 H       	   = NS_convectiony(i,j,u,v,h);
                 vstar[i][j]   -= 0.5*(3*H - Hnpy[i-1][j-1]);
                 Hnpy[i-1][j-1] = H;
-                vstar[i][j]    = dt*vstar[i][j] + v[i][j];
+                // vstar = 1 / (1 + xhi Dt/Dtau)   *  (vn + dt * blabla + xhi Dt/Dtau v_s)
+                // xsi calculé sur l'interieur du domaine
+                vstar[i][j]    = 1/(1 + xhi[i-1][j-1] * dt/dtau) * (v[i][j] + dt * vstar[i][j]  + xhi[i-1][j-1] * dt/dtau * vmixer[i-1][j-1] );
+                // vstar[i][j]    = dt*vstar[i][j] + v[i][j];
             }
         }
         F(i,Ny+1) { vstar[i][0]    = -0.2*(vstar[i][3]    - 5*vstar[i][2]    + 15*vstar[i][1]);
@@ -136,6 +184,14 @@ int main(int argc, char *argv[]){
             T[0][j] = (-h/l0)*(1.5*T[1][j] - 0.5*T[2][j] - Tinf) + T[1][j];
         }
 
+        // computation of the average flux at the open boundary
+        double avgflux = 0;
+        FR(j,1,Nx+1){
+            // flux = - k dT/dy
+            avgflux += l0 * h * (T[0][j] - T[1][j]) / h;
+        }
+        avg_heat_flux[k] = avgflux / Nx;
+
         Tavg = 0.0;
         Trms = 0.0;
         FR(i,1,Ny+1){
@@ -146,12 +202,21 @@ int main(int argc, char *argv[]){
                 //  as is, this loop "co-updates" the values one after the other, depending on the iteration order.
 
                 // this should be 4*h, not 2*h, as it compounds a mean (x+x)/2 and a derivative of step 2*h --> 4*h
-                H       	   = (T[i][j+1]-T[i][j-1])*(u[i][j]+u[i][j-1])/(2*h) + (T[i-1][j] - T[i+1][j])*(v[i-1][j]+v[i][j])/(2*h);
+                H       	   = (T[i][j+1]-T[i][j-1])*(u[i][j]+u[i][j-1])/(4*h) + (T[i-1][j] - T[i+1][j])*(v[i-1][j]+v[i][j])/(4*h);
                 double Tn1     = -0.5*(3*H - HnpT[i-1][j-1]);
                 HnpT[i-1][j-1] = H;
                 Tn1           += (1/(Pr*sqrt(Gr)*h*h))*((T[i][j+1]-2*T[i][j]+T[i][j-1])+(T[i-1][j]-2*T[i][j]+T[i+1][j]));
-                T[i][j]        = dt*Tn1 + T[i][j];
+                // T^(n+1) = 1/(1+xhi dt/Dtau) * (T^n + dt blabla + xhi *dt/dtau * Temp_src)
+                // source term for the mixer is the average temperature of the mixer
+                T_tmp[i][j] = 1/(1 + xhi[i-1][j-1] * dt/dtau) * (T[i][j] + dt*Tn1 + xhi[i-1][j-1] * dt/dtau * avg_temp_mixer[k] );
+                //T_tmp[i][j]    = dt*Tn1 + T[i][j];
                 Tavg          += T[i][j];
+            }
+        }
+
+        FR(i,1,Ny+1){
+            FR(j,1,Nx+1){
+                T[i][j] = T_tmp[i][j];
             }
         }
         Tavg /= 1.5; // ???
@@ -280,10 +345,34 @@ int main(int argc, char *argv[]){
 	fclose(fTb);
 	fclose(fub);
 	fclose(fvb);
+
+
+    FILE * fd1, *fd2, *fd3, *fd4;
+    sprintf(filename, "data/average_temp");
+    fd1 = fopen(filename, "wb");
+    fwrite(average_temp, sizeof(average_temp[0]), miter, fd1);
+    fclose(fd1);
+    sprintf(filename, "data/avg_heat_flux");
+    fd2 = fopen(filename, "wb");
+    fwrite(avg_heat_flux, sizeof(avg_heat_flux[0]), miter, fd2);
+    fclose(fd2);
+    sprintf(filename, "data/rms_temp");
+    fd3 = fopen(filename, "wb");
+    fwrite(rms_temp, sizeof(rms_temp[0]), miter, fd3);
+    fclose(fd3);
+    sprintf(filename, "data/avg_temp_mixer");
+    fd4 = fopen(filename, "wb");
+    fwrite(avg_temp_mixer, sizeof(avg_temp_mixer[0]), miter, fd4);
+    fclose(fd4);
+
+
     free_vector(average_temp);
     free_vector(rms_temp);
+    free_vector(avg_heat_flux);
+    free_vector(avg_temp_mixer);
     free_matrix(P,Ny);
     free_matrix(T,Ny+2);
+    free_matrix(T_tmp,Ny+2);
     free_matrix(u,Ny+2);
     free_matrix(v,Ny+1);
     free_matrix(ustar,Ny+2);
@@ -294,6 +383,8 @@ int main(int argc, char *argv[]){
     free_matrix(Phistar,Ny+2);
     free_matrix(R,Ny);
     free_matrix(HnpT,Ny);
+    free_matrix(umixer,Ny);
+    free_matrix(vmixer,Ny);
     
 	
 	clock_t end = clock();
