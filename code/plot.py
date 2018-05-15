@@ -75,6 +75,7 @@ def initT():
 
     CS = plt.contourf(XT,YT,T,Tcolors)
     cbar = plt.colorbar(CS)
+    plotmixer(usemixer,0)
     return CS
 
 def initv():
@@ -84,6 +85,7 @@ def initv():
 
     CS = plt.contourf(Xv,Yv,v)
     cbar = plt.colorbar(CS)
+    plotmixer(usemixer,0)
     return CS
 
 def initw():
@@ -93,15 +95,34 @@ def initw():
 
     CS = plt.contourf(Xv,Yv,w)
     cbar = plt.colorbar(CS)
+    plotmixer(usemixer,0)
+
     return CS
+
+def plotmixer(um,i):
+    if (um == 1):
+        theta = np.linspace(0,2*np.pi,1000)
+        omega = 0.1
+        r = 0.2*np.cos(3*(theta - i*saveIter*omega/dt))
+        x = r*np.cos(theta) + 1/3
+        y = r*np.sin(theta) + 1/3
+        ax.fill_between(x,0,y,facecolor='black')
+        x = 0.04*np.cos(theta) + 1/3
+        y = 0.04*np.sin(theta) + 1/3
+        ax.fill_between(x,0,y,facecolor='black')
+
 
 def animateT(i,CS,mf):
     print('T: %d/%d (%.1f%%)\r' % (i*saveIter, mf*saveIter, i/mf*100),end="",flush=True)
     ax.clear()
     fd = open('data/T_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,i*saveIter,usemixer),'rb');
     T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
-    T = T.reshape((Ny+2,Nx+2));
+    try:
+        T = T.reshape((Ny+2,Nx+2));
+    except:
+        return CS
     CS = plt.contourf(XT,YT,T,Tcolors)
+    plotmixer(usemixer,i)
     plt.title(r'$\frac{T-T_0}{\Delta T}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
 
@@ -110,8 +131,12 @@ def animatev(i,CS,mf):
     ax.clear()
     fd = open('data/v_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,i*saveIter,usemixer),'rb');
     v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
-    v = v.reshape((Ny+1,Nx+1));
+    try:
+        v = v.reshape((Ny+1,Nx+1));
+    except:
+        return CS
     CS = plt.contourf(Xv,Yv,v)
+    plotmixer(usemixer,i)
     plt.title(r'$\frac{|v|}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
 
@@ -120,8 +145,12 @@ def animatew(i,CS,mf):
     ax.clear()
     fd = open('data/w_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,i*saveIter,usemixer),'rb');
     w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
-    w = w.reshape((Ny+1,Nx+1));
+    try:
+        w = w.reshape((Ny+1,Nx+1));
+    except:
+        return CS
     CS = plt.contourf(Xv,Yv,w)
+    plotmixer(usemixer,i)
     plt.title(r'$\frac{\omega H}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
 

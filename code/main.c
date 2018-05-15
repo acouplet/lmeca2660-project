@@ -323,6 +323,7 @@ int main(int argc, char *argv[]){
                 fclose(fvb);
                 fclose(fwb);
             }
+
             sprintf(filename,"data/T_Nx%d_dt%d_iter%d_mixing%d.bin",Nx,(int)(1/dt),k,usemixer);
             fTb = fopen(filename,"wb");  // w for write, b for binary
             sprintf(filename,"data/v_Nx%d_dt%d_iter%d_mixing%d.bin",Nx,(int)(1/dt),k,usemixer);
