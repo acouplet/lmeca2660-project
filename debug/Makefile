@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O3 -W -Wall -lm -g
+CFLAGS=-O0 -W -Wall -lm -g
 LDFLAGS=
 EXEC=main
 

@@ -38,7 +38,7 @@ double divergence(double **u, double **v, double h, int Nx, int Ny){
 int main(int argc, char *argv[]){
 	clock_t begin = clock();
 
-    int Nx       = 100;
+    int Nx       = 200;
     int Ny       = 1.5*Nx;
     double h     = 1.0/Ny;
     double Pr    = 2.0;
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]){
     double **Phi     = matrix(Ny+2,Nx+2); 
     double **Phistar = matrix(Ny+2,Nx+2);
     double **R       = matrix(Ny,Nx);
-    double **HnpT    = matrix(Ny,Nx);
+    double **HnpT    = matrix(Ny+2,Nx+2);
     double **xhi     = matrix(Ny,Nx);
     double mixer_angle = 0;
     
@@ -106,8 +106,11 @@ int main(int argc, char *argv[]){
     // Initialiser temperature : carré chaud puis reste à zéro            
     FR(i,2*Ny/5,3*Ny/5){
         FR(j,2*Nx/5,3*Nx/5)
-        T[i][j] = 0.01; 
+			T[i][j] = 10; 
     }
+    
+    
+    
         
 
     // Imposer u=1, v=0            
@@ -120,6 +123,12 @@ int main(int argc, char *argv[]){
         FR(j,1,Nx+2){
             v[i][j] = 0; 
     } }
+    
+    FR(i,1,Ny+1){
+		FR(j,1,Nx+1){
+			HnpT[i][j] = 0.5*((0.01*(T[i][j+1]-T[i][j])/h) + (0.01*(T[i][j]-T[i][j-1])/h) + (0*(T[i-1][j]-T[i][j])/h) + (0*(T[i][j]-T[i+1][j])/h));
+		}
+	}
 
     
 
@@ -230,6 +239,13 @@ int main(int argc, char *argv[]){
             avgflux += l0 * h * (T[0][j] - T[1][j]) / h;
         }
         avg_heat_flux[k] = avgflux / Nx;
+        
+        F(i,Ny+2){
+			F(j,Nx+2){
+			//	printf("%.2lf ",HnpT[i][j]);
+			}
+			//printf("\n");
+		}
 
         Tavg = 0.0;
         Trms = 0.0;
@@ -240,17 +256,20 @@ int main(int argc, char *argv[]){
                 //  as is, this loop "co-updates" the values one after the other, depending on the iteration order.
 
                 // this should be 4*h, not 2*h, as it compounds a mean (x+x)/2 and a derivative of step 2*h --> 4*h
-                H = 0.5*((u[i][j]*(T[i][j+1]-T[i][j])/h) + (u[i][j-1]*(T[i][j]-T[i][j-1])/h) + (v[i-1][j]*(T[i-1][j]-T[i][j])/h) + (v[i][j]*(T[i][j]-T[i+1][j])/h));
+                //H = 0.5*((u[i][j]*(T[i][j+1]-T[i][j])/h) + (u[i][j-1]*(T[i][j]-T[i][j-1])/h) + (v[i-1][j]*(T[i-1][j]-T[i][j])/h) + (v[i][j]*(T[i][j]-T[i+1][j])/h));
+                H = 0.5*((0.01*(T[i][j+1]-T[i][j])/h) + (0.01*(T[i][j]-T[i][j-1])/h) + (0*(T[i-1][j]-T[i][j])/h) + (0*(T[i][j]-T[i+1][j])/h));
                 //H = ((u[i][j-1] + u[i][j])/2 * (T[i][j+1] - T[i][j-1])/(2*h)) + ((v[i-1][j] + v[i][j])/2 * (T[i-1][j] - T[i+1][j])/(2*h)) + (1/2)*((T[i][j]*(u[i][j] - u[i][j-1])/h) + T[i][j]*(v[i-1][j] - v[i][j])/h);
                 //H       	   = (T[i][j+1]-T[i][j-1])*(u[i][j]+u[i][j-1])/(4*h) + (T[i-1][j] - T[i+1][j])*(v[i-1][j]+v[i][j])/(4*h);
                 
                 // Idea : HnpT pas de valeurs au début de la boucle --> may cause problems 
-                double Tn1     =   -0.5*(3*H - HnpT[i-1][j-1]); //= 0; 
-                HnpT[i-1][j-1] = H;
-                //Tn1           += (1/(Pr*sqrt(Gr)*h*h))*((T[i][j+1]-2*T[i][j]+T[i][j-1])+(T[i-1][j]-2*T[i][j]+T[i+1][j]));
+                double Tn1     =   -0.5*(3*H - HnpT[i][j]); //= 0; 
+                HnpT[i][j] = H;
+                Tn1           += (1/(Pr*sqrt(Gr)*h*h))*((T[i][j+1]-2*T[i][j]+T[i][j-1])+(T[i-1][j]-2*T[i][j]+T[i+1][j]));
+                //printf("%lf ", h);
                 // T^(n+1) = 1/(1+xhi dt/Dtau) * (T^n + dt blabla + xhi *dt/dtau * Temp_src)
                 // source term for the mixer is the average temperature of the mixer
-                T_tmp[i][j] = 1/(1 + xhi[i-1][j-1] * dt/dtau) * (T[i][j] + dt*Tn1 + xhi[i-1][j-1] * dt/dtau * avg_temp_mixer[k] );
+                T_tmp[i][j] = dt*Tn1 + T[i][j];
+                //T_tmp[i][j] = 1/(1 + xhi[i-1][j-1] * dt/dtau) * (T[i][j] + dt*Tn1 + xhi[i-1][j-1] * dt/dtau * avg_temp_mixer[k] );
                 //T_tmp[i][j]    = dt*Tn1 + T[i][j];
                 Tavg          += T[i][j];
             }
@@ -327,9 +346,9 @@ int main(int argc, char *argv[]){
         //============//
         // Equation 4 //
         //============//
-        F(i,Ny)
-            F(j,Nx)
-                P[i][j] += Phi[i+1][j+1];
+        //F(i,Ny)
+        //    F(j,Nx)
+        //        P[i][j] += Phi[i+1][j+1];
         
 
         printf("SOR Iterations = %d\n",iter);
@@ -366,10 +385,10 @@ int main(int argc, char *argv[]){
             F(i,Ny+2){
                 fwrite(T[i],sizeof(T[i][0]),Nx+2,fTb);
                 fwrite(u[i],sizeof(u[i][0]),Nx+1,fub);
-                fwrite(ustar[i], sizeof(ustar[i][0]),Nx+1,debug_ustar);
+                //fwrite(ustar[i], sizeof(ustar[i][0]),Nx+1,debug_ustar);
                 if(i < Ny+1){
                     fwrite(v[i],sizeof(T[i][0]),Nx+2,fvb);
-                    fwrite(vstar[i],sizeof(T[i][0]),Nx+2,debug_vstar);
+                    //fwrite(vstar[i],sizeof(T[i][0]),Nx+2,debug_vstar);
                 }
             }
             F(i,Ny){
