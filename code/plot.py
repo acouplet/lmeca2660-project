@@ -25,8 +25,8 @@ y = np.linspace(1,0,num=Ny+1)
 Xv, Yv = np.meshgrid(x,y)
 Tcolors = np.linspace(-0.02,0.02,num=101)
 
-diag = open('data/diagnostics_Nx%d_dt%d_mixing%d.bin' % (Nx,dt,usemixer),'rb');
-b = os.path.getsize('data/diagnostics_Nx%d_dt%d_mixing%d.bin' % (Nx,dt,usemixer));
+diag = open('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer),'rb');
+b = os.path.getsize('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer));
 diag = np.fromfile(diag,dtype=np.float64,count= int(b/8));
 diag = diag.reshape((int(b/32),4));
 tUH = np.linspace(1/dt,b/32/dt,num=int(b/32))
@@ -56,20 +56,17 @@ plt.subplots_adjust(top=0.8)
 plt.savefig('results/diagnostics_Nx%d_dt%d_mixing%d.eps' % (Nx,dt,usemixer))
 plt.show()
 
-
-
-
 def framesT():
-    return len(glob.glob('data/T_Nx%d_dt%d_iter*_mixing%d.bin' % (Nx,dt,usemixer)))
+    return len(glob.glob('data/Nx%d_dt%d_mixing%d/T_iter*.bin' % (Nx,dt,usemixer)))
 
 def framesv():
-    return len(glob.glob('data/v_Nx%d_dt%d_iter*_mixing%d.bin' % (Nx,dt,usemixer)))
+    return len(glob.glob('data/Nx%d_dt%d_mixing%d/v_iter*.bin' % (Nx,dt,usemixer)))
 
 def framesw():
-    return len(glob.glob('data/w_Nx%d_dt%d_iter*_mixing%d.bin' % (Nx,dt,usemixer)))
+    return len(glob.glob('data/Nx%d_dt%d_mixing%d/w_iter*.bin' % (Nx,dt,usemixer)))
 
 def initT():
-    fd = open('data/T_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,0,usemixer),'rb');
+    fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
     T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
     T = T.reshape((Ny+2,Nx+2));
 
@@ -79,7 +76,7 @@ def initT():
     return CS
 
 def initv():
-    fd = open('data/v_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,0,usemixer),'rb');
+    fd = open('data/Nx%d_dt%d_mixing%d/v_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
     v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     v = v.reshape((Ny+1,Nx+1));
 
@@ -89,7 +86,7 @@ def initv():
     return CS
 
 def initw():
-    fd = open('data/w_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,0,usemixer),'rb');
+    fd = open('data/Nx%d_dt%d_mixing%d/w_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
     w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     w = w.reshape((Ny+1,Nx+1));
 
@@ -115,7 +112,7 @@ def plotmixer(um,i):
 def animateT(i,CS,mf):
     print('T: %d/%d (%.1f%%)\r' % (i*saveIter, mf*saveIter, i/mf*100),end="",flush=True)
     ax.clear()
-    fd = open('data/T_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,i*saveIter,usemixer),'rb');
+    fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,i*saveIter),'rb');
     T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
     try:
         T = T.reshape((Ny+2,Nx+2));
@@ -129,7 +126,7 @@ def animateT(i,CS,mf):
 def animatev(i,CS,mf):
     print('v: %d/%d (%.1f%%)\r' % (i*saveIter, mf*saveIter, i/mf*100),end="",flush=True)
     ax.clear()
-    fd = open('data/v_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,i*saveIter,usemixer),'rb');
+    fd = open('data/Nx%d_dt%d_mixing%d/v_iter%d.bin' % (Nx,dt,usemixer,i*saveIter),'rb');
     v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     try:
         v = v.reshape((Ny+1,Nx+1));
@@ -143,7 +140,7 @@ def animatev(i,CS,mf):
 def animatew(i,CS,mf):
     print('w: %d/%d (%.1f%%)\r' % (i*saveIter, mf*saveIter, i/mf*100),end="",flush=True)
     ax.clear()
-    fd = open('data/w_Nx%d_dt%d_iter%d_mixing%d.bin' % (Nx,dt,i*saveIter,usemixer),'rb');
+    fd = open('data/Nx%d_dt%d_mixing%d/w_iter%d.bin' % (Nx,dt,usemixer,i*saveIter),'rb');
     w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     try:
         w = w.reshape((Ny+1,Nx+1));
