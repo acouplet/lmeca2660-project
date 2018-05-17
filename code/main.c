@@ -21,6 +21,14 @@ int main(int argc, char *argv[]){
 		problem = New_Problem(100,100,20,0);
 	problem->Description(problem);
 
+	int Nx = problem->Nx;
+	int Ny = problem->Ny;
+	double **T = problem->T;
+	double **u = problem->u;
+	double **v = problem->v;
+	double **HnpT = problem->HnpT;
+	double h = problem->h;
+	        
     // Initial
     problem->BoundaryConditions(problem);
     problem->Mixer(problem);
