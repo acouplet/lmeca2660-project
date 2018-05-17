@@ -72,7 +72,7 @@ def initT():
     T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
     T = T.reshape((Ny+2,Nx+2));
 
-    CS = plt.contourf(XT,YT,T,Tcolors)
+    CS = plt.contourf(XT,YT,T,Tcolors,cmap=plt.cm.jet)
     cbar = plt.colorbar(CS)
     plotmixer(usemixer,0)
     return CS
@@ -82,7 +82,7 @@ def initv():
     v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     v = v.reshape((Ny+1,Nx+1));
 
-    CS = plt.contourf(Xv,Yv,v,vcolors)
+    CS = plt.contourf(Xv,Yv,v,vcolors,cmap=plt.cm.jet)
     cbar = plt.colorbar(CS)
     plotmixer(usemixer,0)
     return CS
@@ -92,7 +92,7 @@ def initw():
     w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     w = w.reshape((Ny+1,Nx+1));
 
-    CS = plt.contourf(Xv,Yv,w,wcolors)
+    CS = plt.contourf(Xv,Yv,w,wcolors,cmap=plt.cm.jet)
     cbar = plt.colorbar(CS)
     plotmixer(usemixer,0)
 
@@ -120,7 +120,7 @@ def animateT(i,CS,mf):
         T = T.reshape((Ny+2,Nx+2));
     except:
         return CS
-    CS = plt.contourf(XT,YT,T,Tcolors)
+    CS = plt.contourf(XT,YT,T,Tcolors,cmap=plt.cm.jet)
     plotmixer(usemixer,i)
     plt.title(r'$\frac{T-T_0}{\Delta T}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
@@ -134,7 +134,7 @@ def animatev(i,CS,mf):
         v = v.reshape((Ny+1,Nx+1));
     except:
         return CS
-    CS = plt.contourf(Xv,Yv,v,vcolors)
+    CS = plt.contourf(Xv,Yv,v,vcolors,cmap=plt.cm.jet)
     plotmixer(usemixer,i)
     plt.title(r'$\frac{|v|}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
@@ -148,7 +148,7 @@ def animatew(i,CS,mf):
         w = w.reshape((Ny+1,Nx+1));
     except:
         return CS
-    CS = plt.contourf(Xv,Yv,w,wcolors)
+    CS = plt.contourf(Xv,Yv,w,wcolors,cmap=plt.cm.jet)
     plotmixer(usemixer,i)
     plt.title(r'$\frac{\omega H}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
