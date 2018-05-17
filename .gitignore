@@ -6,6 +6,7 @@ vgcore.*
 *.avi
 code/results/*
 code/data/*
+*.bin
 
 ### C ###
 # Prerequisites
