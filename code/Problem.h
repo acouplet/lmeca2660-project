@@ -43,6 +43,8 @@ typedef struct Problem {
     double rmsTemp;
     double avgTempMixer;
     double avgHeatFlux;
+    double Reh;
+    double Rehw;
 
     double sumR;
     double globe;

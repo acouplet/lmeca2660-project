@@ -27,12 +27,17 @@ Tcolors = np.linspace(-0.005,0.005,num=101)
 vcolors = np.linspace(-0.005,0.005,num=101)
 wcolors = np.linspace(-2,2,num=101)
 
+cmap = plt.cm.jet
+N = cmap.N
+cmap.set_under(cmap(1))
+cmap.set_over(cmap(N-1))
+
 diag = open('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer),'rb');
 b = os.path.getsize('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer));
 diag = np.fromfile(diag,dtype=np.float64,count= int(b/8));
-diag = diag.reshape((int(b/32),4));
-tUH = np.linspace(1/dt,b/32/dt,num=int(b/32))
-f, axarr = plt.subplots(2,2,figsize=(10,8))
+diag = diag.reshape((int(b/48),6));
+tUH = np.linspace(1/dt,b/48/dt,num=int(b/48))
+f, axarr = plt.subplots(2,3,figsize=(10,8))
 plt.subplots_adjust(wspace=0.3,hspace=0.3)
 axarr[0,0].plot(tUH,diag[:,0])
 axarr[0,0].grid(True)
@@ -44,6 +49,11 @@ axarr[0,1].grid(True)
 axarr[0,1].set_title('Mixer temperature')
 axarr[0,1].set_xlabel(r'$tU/H$')
 axarr[0,1].set_ylabel(r'$\frac{\langle T\rangle|_{cyl}(t)-T_0}{\Delta T}$')
+axarr[0,2].plot(tUH,diag[:,4])
+axarr[0,2].grid(True)
+axarr[0,2].set_title(r'Mesh Reynolds number $Re_h$')
+axarr[0,2].set_xlabel(r'$tU/H$')
+axarr[0,2].set_ylabel(r'$Re_h = \frac{(|u|+|v|)h}{\nu}$')
 axarr[1,0].plot(tUH,diag[:,2])
 axarr[1,0].grid(True)
 axarr[1,0].set_title('RMS temperature')
@@ -54,6 +64,11 @@ axarr[1,1].grid(True)
 axarr[1,1].set_title('Average heat flux')
 axarr[1,1].set_xlabel(r'$tU/H$')
 axarr[1,1].set_ylabel(r'$\frac{q_e(t)}{q_w}$')
+axarr[1,2].plot(tUH,diag[:,5])
+axarr[1,2].grid(True)
+axarr[1,2].set_title(r'Mesh Reynolds number $Re_{h\omega}$')
+axarr[1,2].set_xlabel(r'$tU/H$')
+axarr[1,2].set_ylabel(r'$Re_{h\omega} = \frac{|\omega|h^2}{\nu}$')
 plt.subplots_adjust(top=0.8)
 plt.savefig('results/diagnostics_Nx%d_dt%d_mixing%d.eps' % (Nx,dt,usemixer))
 plt.show()
@@ -68,14 +83,14 @@ def framesw():
     return len(glob.glob('data/Nx%d_dt%d_mixing%d/w_iter*.bin' % (Nx,dt,usemixer)))
 
 def initT():
-    fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
-    T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
-    T = T.reshape((Ny+2,Nx+2));
-
-    CS = plt.contourf(XT,YT,T,Tcolors,cmap=plt.cm.jet)
-    cbar = plt.colorbar(CS)
-    plotmixer(usemixer,0)
-    return CS
+	fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
+	T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
+	T = T.reshape((Ny+2,Nx+2));
+	CS = plt.contourf(XT,YT,T,Tcolors,cmap=cmap,extend="both")
+	
+	cbar = plt.colorbar(CS)
+	plotmixer(usemixer,0)
+	return CS
 
 def initv():
     fd = open('data/Nx%d_dt%d_mixing%d/v_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
@@ -120,7 +135,7 @@ def animateT(i,CS,mf):
         T = T.reshape((Ny+2,Nx+2));
     except:
         return CS
-    CS = plt.contourf(XT,YT,T,Tcolors,cmap=plt.cm.jet)
+    CS = plt.contourf(XT,YT,T,Tcolors,cmap=cmap,extend="both")
     plotmixer(usemixer,i)
     plt.title(r'$\frac{T-T_0}{\Delta T}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS

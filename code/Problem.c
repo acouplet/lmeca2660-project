@@ -66,6 +66,8 @@ static void Problem_Init(Problem *This, int Nx, int ddt, int saveIter, int useMi
     This->rmsTemp      = 0.0;
     This->avgTempMixer = 0.0;
     This->avgHeatFlux  = 0.0;
+    This->Reh = 0.0;
+    This->Rehw = 0.0;
     This->SORtime = 0.0;
 
     int Ny = This->Ny;
@@ -205,13 +207,29 @@ void Problem_Poisson(Problem *This){
     This->globe = 1.0;
     int iter = 0;
     This->SORtb = clock();
-    while(This->globe > 1e-9){
+    
+    
+    
+    
+    while(This->globe > 1e-6){
+		// Phi ghost points: dPhi/dx = 0 and dPhi/dy = 0
+		F(i,Ny+2){
+			Phi[i][0] = Phi[i][1];
+			Phi[i][Nx+1] = Phi[i][Nx];
+		}
+		F(j,Nx+2){
+			Phi[0][j] = Phi[1][j];
+			Phi[Ny+1][j] = Phi[Ny][j];
+		}		
+		// NO MORE CONVERGENCE
+		
         FR(i,1,Ny+1){
             FR(j,1,Nx+1){
                 Phistar[i][j] = (h*h)/4*(-1/This->dt*((ustar[i][j]-ustar[i][j-1])/h + (vstar[i-1][j]-vstar[i][j])/h) + (Phi[i+1][j] + Phi[i-1][j])/(h*h) + (Phi[i][j+1] + Phi[i][j-1])/(h*h));
                 Phi[i][j] = This->alpha*Phistar[i][j] + (1-This->alpha)*Phi[i][j];
             }
         }
+        
         This->sumR = 0;
         F(i,Ny){
             F(j,Nx){
@@ -277,11 +295,22 @@ void Problem_WriteData(Problem *This){
     double **v = This->v;
     double h = This->h;
     char filename[100];
+    
+    This->Reh = 0.0;
+    This->Rehw = 0.0;
+    F(i,Ny+1){
+		F(j,Nx+1){
+			This->Reh = fmax(This->Reh, sqrt(This->Gr)*(abs(u[i][j]+u[i+1][j])/2 + abs(v[i][j]+v[i][j+1])/2)*h);
+			This->Rehw = fmax(This->Rehw, sqrt(This->Gr)*abs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
+		}
+	}
 
     fwrite(&(This->averageTemp),sizeof(This->averageTemp),1,This->fdiag);
     fwrite(&(This->avgTempMixer),sizeof(This->avgTempMixer),1,This->fdiag);
     fwrite(&(This->rmsTemp),sizeof(This->averageTemp),1,This->fdiag);
     fwrite(&(This->avgHeatFlux),sizeof(This->avgHeatFlux),1,This->fdiag);
+    fwrite(&(This->Reh),sizeof(This->Reh),1,This->fdiag);
+    fwrite(&(This->Rehw),sizeof(This->Rehw),1,This->fdiag);
 
 
     if (iter%This->saveIter == 0){

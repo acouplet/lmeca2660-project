@@ -33,10 +33,10 @@ int main(int argc, char *argv[]){
     problem->BoundaryConditions(problem);
     problem->Mixer(problem);
     problem->Diagnostics(problem);
-    problem->IterationInfo(problem);
     problem->WriteData(problem);
+    problem->IterationInfo(problem);
 
-    while(problem->averageTemp < 3e-3){
+    while(problem->averageTemp < 3e-3 && problem->iter < 100000){
         problem->BoundaryConditions(problem);
         problem->Mixer(problem);
         problem->Momentum(problem);
@@ -45,8 +45,8 @@ int main(int argc, char *argv[]){
         problem->SpeedUpdate(problem);
         problem->PressureUpdate(problem);
         problem->iter++;
-        problem->IterationInfo(problem);
         problem->WriteData(problem);
+        problem->IterationInfo(problem);
     }
     return(0);
 }
