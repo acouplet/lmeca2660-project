@@ -191,7 +191,7 @@ void Problem_Energy(Problem *This){
     FR(i,1,Ny+1) 
         FR(j,1,Nx+1) 
             This->rmsTemp += pow(T[i][j] - This->averageTemp,2);
-    This->rmsTemp /= (Nx*Ny);
+    This->rmsTemp = sqrt(This->rmsTemp/(Nx*Ny));
 }
 
 void Problem_Poisson(Problem *This){
@@ -359,7 +359,6 @@ void Problem_Mixer(Problem *This){
     }
 
     // Xi mask on v nodes
-    int nMixerNodes = 0;
     FR(i,1,Ny){
         FR(j,1,Nx+1){
             x = (j-0.5)*h;
@@ -373,6 +372,7 @@ void Problem_Mixer(Problem *This){
     }
 
     // Xi mask on T nodes + avgTempMixer
+    int nMixerNodes = 0;
     This->avgTempMixer = 0;
     FR(i,1,Ny+1){
         FR(j,1,Nx+1){
