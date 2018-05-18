@@ -207,13 +207,29 @@ void Problem_Poisson(Problem *This){
     This->globe = 1.0;
     int iter = 0;
     This->SORtb = clock();
-    while(This->globe > 1e-9){
+    
+    
+    
+    
+    while(This->globe > 1e-6){
+		// Phi ghost points: dPhi/dx = 0 and dPhi/dy = 0
+		F(i,Ny+2){
+			Phi[i][0] = Phi[i][1];
+			Phi[i][Nx+1] = Phi[i][Nx];
+		}
+		F(j,Nx+2){
+			Phi[0][j] = Phi[1][j];
+			Phi[Ny+1][j] = Phi[Ny][j];
+		}		
+		// NO MORE CONVERGENCE
+		
         FR(i,1,Ny+1){
             FR(j,1,Nx+1){
                 Phistar[i][j] = (h*h)/4*(-1/This->dt*((ustar[i][j]-ustar[i][j-1])/h + (vstar[i-1][j]-vstar[i][j])/h) + (Phi[i+1][j] + Phi[i-1][j])/(h*h) + (Phi[i][j+1] + Phi[i][j-1])/(h*h));
                 Phi[i][j] = This->alpha*Phistar[i][j] + (1-This->alpha)*Phi[i][j];
             }
         }
+        
         This->sumR = 0;
         F(i,Ny){
             F(j,Nx){

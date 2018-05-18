@@ -27,6 +27,11 @@ Tcolors = np.linspace(-0.005,0.005,num=101)
 vcolors = np.linspace(-0.005,0.005,num=101)
 wcolors = np.linspace(-2,2,num=101)
 
+cmap = plt.cm.jet
+N = cmap.N
+cmap.set_under(cmap(1))
+cmap.set_over(cmap(N-1))
+
 diag = open('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer),'rb');
 b = os.path.getsize('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer));
 diag = np.fromfile(diag,dtype=np.float64,count= int(b/8));
@@ -78,14 +83,14 @@ def framesw():
     return len(glob.glob('data/Nx%d_dt%d_mixing%d/w_iter*.bin' % (Nx,dt,usemixer)))
 
 def initT():
-    fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
-    T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
-    T = T.reshape((Ny+2,Nx+2));
-
-    CS = plt.contourf(XT,YT,T,Tcolors,cmap=plt.cm.jet)
-    cbar = plt.colorbar(CS)
-    plotmixer(usemixer,0)
-    return CS
+	fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
+	T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
+	T = T.reshape((Ny+2,Nx+2));
+	CS = plt.contourf(XT,YT,T,Tcolors,cmap=cmap,extend="both")
+	
+	cbar = plt.colorbar(CS)
+	plotmixer(usemixer,0)
+	return CS
 
 def initv():
     fd = open('data/Nx%d_dt%d_mixing%d/v_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
@@ -130,7 +135,7 @@ def animateT(i,CS,mf):
         T = T.reshape((Ny+2,Nx+2));
     except:
         return CS
-    CS = plt.contourf(XT,YT,T,Tcolors,cmap=plt.cm.jet)
+    CS = plt.contourf(XT,YT,T,Tcolors,cmap=cmap,extend="both")
     plotmixer(usemixer,i)
     plt.title(r'$\frac{T-T_0}{\Delta T}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
