@@ -373,6 +373,7 @@ void Problem_Mixer(Problem *This){
     }
 
     // Xi mask on T nodes + avgTempMixer
+    This->avgTempMixer = 0;
     FR(i,1,Ny+1){
         FR(j,1,Nx+1){
             x = (j-0.5)*h;
@@ -381,7 +382,7 @@ void Problem_Mixer(Problem *This){
             d = sqrt(pow(x-This->xg,2) + pow(y-This->yg,2));
             This->xiT[i][j] = (d<=This->mixerRadius*cos(3*theta + This->mixerAngle)) && This->useMixer;
             if (d <= This->mixerRadius){
-                This->avgTempMixer = This->T[i][j];
+                This->avgTempMixer += This->T[i][j];
                 nMixerNodes++;
             }
         }
