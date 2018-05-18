@@ -66,6 +66,8 @@ static void Problem_Init(Problem *This, int Nx, int ddt, int saveIter, int useMi
     This->rmsTemp      = 0.0;
     This->avgTempMixer = 0.0;
     This->avgHeatFlux  = 0.0;
+    This->Reh = 0.0;
+    This->Rehw = 0.0;
     This->SORtime = 0.0;
 
     int Ny = This->Ny;
@@ -277,11 +279,22 @@ void Problem_WriteData(Problem *This){
     double **v = This->v;
     double h = This->h;
     char filename[100];
+    
+    This->Reh = 0.0;
+    This->Rehw = 0.0;
+    F(i,Ny+1){
+		F(j,Nx+1){
+			This->Reh = fmax(This->Reh, sqrt(This->Gr)*(abs(u[i][j]+u[i+1][j])/2 + abs(v[i][j]+v[i][j+1])/2)*h);
+			This->Rehw = fmax(This->Rehw, sqrt(This->Gr)*abs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
+		}
+	}
 
     fwrite(&(This->averageTemp),sizeof(This->averageTemp),1,This->fdiag);
     fwrite(&(This->avgTempMixer),sizeof(This->avgTempMixer),1,This->fdiag);
     fwrite(&(This->rmsTemp),sizeof(This->averageTemp),1,This->fdiag);
     fwrite(&(This->avgHeatFlux),sizeof(This->avgHeatFlux),1,This->fdiag);
+    fwrite(&(This->Reh),sizeof(This->Reh),1,This->fdiag);
+    fwrite(&(This->Rehw),sizeof(This->Rehw),1,This->fdiag);
 
 
     if (iter%This->saveIter == 0){
