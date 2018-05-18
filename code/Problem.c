@@ -116,7 +116,7 @@ void Problem_Momentum(Problem *This){
     // ustar
     FR(i,1,Ny+1){
         FR(j,1,Nx){
-            pressure = (P[i-1][j] - P[i-1][j-1])/h;
+            pressure = (P[i-1][j] - P[i-1][j-1])/h; 
             diffusion = (u[i][j+1]-2*u[i][j]+u[i][j-1])/(h*h) + (u[i-1][j]-2*u[i][j]+u[i+1][j])/(h*h);
             adv1 = (1/(4*h))*((u[i][j-1]+u[i][j])*(u[i][j]-u[i][j-1]) + (u[i][j]+u[i][j+1])*(u[i][j+1]-u[i][j]));
             adv2 = (1/(4*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]-u[i][j]) + (v[i][j+1]+v[i][j])*(u[i][j]-u[i+1][j]));
@@ -279,9 +279,9 @@ void Problem_WriteData(Problem *This){
     char filename[100];
 
     fwrite(&(This->averageTemp),sizeof(This->averageTemp),1,This->fdiag);
-    fwrite(&(This->avgHeatFlux),sizeof(This->avgHeatFlux),1,This->fdiag);
-    fwrite(&(This->rmsTemp),sizeof(This->averageTemp),1,This->fdiag);
     fwrite(&(This->avgTempMixer),sizeof(This->avgTempMixer),1,This->fdiag);
+    fwrite(&(This->rmsTemp),sizeof(This->averageTemp),1,This->fdiag);
+    fwrite(&(This->avgHeatFlux),sizeof(This->avgHeatFlux),1,This->fdiag);
 
 
     if (iter%This->saveIter == 0){
