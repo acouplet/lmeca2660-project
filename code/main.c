@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
     problem->WriteData(problem);
     problem->IterationInfo(problem);
 
-    while(problem->averageTemp < 3e-3 && problem->iter < 100000){
+    while(problem->averageTemp < 3e-3 && problem->iter < 100000 && problem->Reh <= 40 && problem->Rehw <= 25){
         problem->BoundaryConditions(problem);
         problem->Mixer(problem);
         problem->Momentum(problem);
@@ -48,5 +48,13 @@ int main(int argc, char *argv[]){
         problem->WriteData(problem);
         problem->IterationInfo(problem);
     }
+    
+    if (problem->Reh > 40)
+		printf("Simulation stopped: Reh = %.2lf > 40\n", problem->Reh);
+		
+	if (problem->Rehw > 25)
+		printf("Simulation stopped: Rehw = %.2lf > 25\n", problem->Rehw);
+		
+    
     return(0);
 }
