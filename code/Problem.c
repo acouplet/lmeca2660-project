@@ -85,7 +85,6 @@ static void Problem_Init(Problem *This, int Nx, int ddt, int saveIter, int useMi
     This->xiu = matrix(Ny+2,Nx+1);
     This->xiv = matrix(Ny+1,Nx+2);
     This->xiT = matrix(Ny+2,Nx+2);
-    This->xiRe = matrix(Ny+1,Nx+1);
     This->Hnpu = matrix(Ny+2,Nx+1);
     This->Hnpv = matrix(Ny+1,Nx+2);
     This->HnpT = matrix(Ny+2,Nx+2);
@@ -319,8 +318,8 @@ void Problem_WriteData(Problem *This){
     This->Rehw = 0.0;
     F(i,Ny+1){
 		F(j,Nx+1){
-			This->Reh = fmax(This->Reh, (!This->xiRe[i][j])*sqrt(This->Gr)*(fabs(u[i][j]+u[i+1][j])/2.0 + fabs(v[i][j]+v[i][j+1])/2.0)*h);
-			This->Rehw = fmax(This->Rehw, (!This->xiRe[i][j])*sqrt(This->Gr)*fabs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
+			This->Reh = fmax(This->Reh, sqrt(This->Gr)*(fabs(u[i][j]+u[i+1][j])/2.0 + fabs(v[i][j]+v[i][j+1])/2.0)*h);
+			This->Rehw = fmax(This->Rehw, sqrt(This->Gr)*fabs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
 		}
 	}
 
@@ -397,17 +396,6 @@ void Problem_Mixer(Problem *This){
     int Ny = This->Ny;
     double x, y, theta, d;
     double h = This->h;
-    
-    // Xi mask on Re nodes
-    F(i,Ny+1){
-		F(j,Nx+1){
-			x = j*h;
-			y = (Ny-i)*h;
-			theta = atan2(y-This->yg,x-This->xg);
-            d = sqrt(pow(x-This->xg,2) + pow(y-This->yg,2));
-            This->xiRe[i][j] = (d<=This->mixerRadius*cos(3*(theta - This->mixerAngle))) && This->useMixer;
-		}
-	}
 
     // Xi mask on u nodes
     FR(i,1,Ny+1){

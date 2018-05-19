@@ -90,6 +90,7 @@ def initT():
 	
 	cbar = plt.colorbar(CS)
 	plotmixer(usemixer,0)
+	
 	return CS
 
 def initv():
@@ -100,6 +101,7 @@ def initv():
     CS = plt.contourf(Xv,Yv,v,vcolors,cmap=cmap,extend="both")
     cbar = plt.colorbar(CS)
     plotmixer(usemixer,0)
+    
     return CS
 
 def initw():
@@ -110,6 +112,7 @@ def initw():
     CS = plt.contourf(Xv,Yv,w,wcolors,cmap=cmap,extend="both")
     cbar = plt.colorbar(CS)
     plotmixer(usemixer,0)
+    
 
     return CS
 
@@ -171,6 +174,7 @@ def animatew(i,CS,mf):
 
 fig = plt.figure()
 ax = plt.axes(xlim=(0,1/1.5),ylim=(0,1))
+ax.set_aspect('equal')
 CS = initT()
 maxframe = framesT()
 anim = animation.FuncAnimation(fig,animateT,interval=1000/25,fargs=(CS,maxframe,),frames=maxframe)
@@ -180,6 +184,7 @@ print('T: done                    ')
 
 fig = plt.figure()
 ax = plt.axes(xlim=(0,1/1.5),ylim=(0,1))
+ax.set_aspect('equal')
 CS = initv()
 maxframe = framesv()
 anim = animation.FuncAnimation(fig,animatev,interval=1000/25,fargs=(CS,maxframe,),frames=maxframe)
@@ -189,6 +194,7 @@ print('v: done                      ')
 
 fig = plt.figure()
 ax = plt.axes(xlim=(0,1/1.5),ylim=(0,1))
+ax.set_aspect('equal')
 CS = initw()
 maxframe = framesw()
 anim = animation.FuncAnimation(fig,animatew,interval=1000/25,fargs=(CS,maxframe,),frames=maxframe)

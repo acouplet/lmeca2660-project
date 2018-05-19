@@ -67,7 +67,6 @@ typedef struct Problem {
     double **xiu;
     double **xiv;
     double **xiT;
-    double **xiRe;
     double **Hnpu;
     double **Hnpv;
     double **HnpT;
