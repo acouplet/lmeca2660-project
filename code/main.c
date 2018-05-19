@@ -36,7 +36,7 @@ int main(int argc, char *argv[]){
     problem->WriteData(problem);
     problem->IterationInfo(problem);
 
-    while(problem->averageTemp < 3e-3 && problem->iter < 100000 && problem->Reh <= 40 && problem->Rehw <= 25){
+    while(problem->averageTemp < 3e-3 && problem->iter < 100000){// && problem->Reh <= 40 && problem->Rehw <= 25){
         problem->BoundaryConditions(problem);
         problem->Mixer(problem);
         problem->Momentum(problem);
