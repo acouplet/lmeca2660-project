@@ -319,8 +319,8 @@ void Problem_WriteData(Problem *This){
     This->Rehw = 0.0;
     F(i,Ny+1){
 		F(j,Nx+1){
-			This->Reh = fmax(This->Reh, (!xiRe[i][j])*sqrt(This->Gr)*(fabs(u[i][j]+u[i+1][j])/2.0 + fabs(v[i][j]+v[i][j+1])/2.0)*h);
-			This->Rehw = fmax(This->Rehw, (!xiRe[i][j])*sqrt(This->Gr)*fabs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
+			This->Reh = fmax(This->Reh, (!This->xiRe[i][j])*sqrt(This->Gr)*(fabs(u[i][j]+u[i+1][j])/2.0 + fabs(v[i][j]+v[i][j+1])/2.0)*h);
+			This->Rehw = fmax(This->Rehw, (!This->xiRe[i][j])*sqrt(This->Gr)*fabs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
 		}
 	}
 
@@ -402,7 +402,7 @@ void Problem_Mixer(Problem *This){
     F(i,Ny+1){
 		F(j,Nx+1){
 			x = j*h;
-			u = (Ny-i)*h;
+			y = (Ny-i)*h;
 			theta = atan2(y-This->yg,x-This->xg);
             d = sqrt(pow(x-This->xg,2) + pow(y-This->yg,2));
             This->xiRe[i][j] = (d<=This->mixerRadius*cos(3*(theta - This->mixerAngle))) && This->useMixer;
