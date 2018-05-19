@@ -46,19 +46,19 @@ static void Problem_Init(Problem *This, int Nx, int ddt, int saveIter, int useMi
     This->useMixer    = useMixer;
     This->saveIter    = saveIter;
     This->iter        = 0;
-    This->h           = 1.0/This->Ny;
+    This->h           = 1.0/(double)This->Ny;
     This->Pr          = 2.0;
-    This->dt          = 1.0/ddt;
-    This->dtau        = This->dt/1e3;
-    This->l0          = 1e-3;
-    This->Tinf        = -5e-3;
+    This->dt          = 1.0/(double)ddt;
+    This->dtau        = This->dt/(double)1e3;
+    This->l0          = 1.0e-3;
+    This->Tinf        = -5.0e-3;
     This->Gr          = 2.0e10;
     This->alpha       = 1.97;
     This->mixerRadius = 0.3*This->Nx*This->h;
     This->omega       = 0.1;
     This->xg          = 1./3.;
     This->yg          = 1./3.;
-    This->mixerAngle  = 0;
+    This->mixerAngle  = 0.0;
 
     This->sumR         = 0.0;
     This->globe        = 0.0;
@@ -120,10 +120,14 @@ void Problem_Momentum(Problem *This){
         FR(j,1,Nx){
             pressure = (P[i-1][j] - P[i-1][j-1])/h; 
             diffusion = (u[i][j+1]-2*u[i][j]+u[i][j-1])/(h*h) + (u[i-1][j]-2*u[i][j]+u[i+1][j])/(h*h);
-            adv1 = (1/(4*h))*((u[i][j-1]+u[i][j])*(u[i][j]-u[i][j-1]) + (u[i][j]+u[i][j+1])*(u[i][j+1]-u[i][j]));
-            adv2 = (1/(4*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]-u[i][j]) + (v[i][j+1]+v[i][j])*(u[i][j]-u[i+1][j]));
-            div1 = (1/(4*h))*((u[i][j+1]+u[i][j])*(u[i][j+1]+u[i][j]) - (u[i][j]+u[i][j-1])*(u[i][j]+u[i][j-1]));
-            div2 = (1/(4*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]+u[i][j]) - (v[i][j+1]+v[i][j])*(u[i][j]+u[i+1][j]));
+            adv1 = (0.25/h)*((u[i][j+1]+u[i][j])*(u[i][j+1]-u[i][j]) + (u[i][j]+u[i][j-1])*(u[i][j]-u[i][j-1]));
+            //adv1 = (1/(4.0*h))*((u[i][j-1]+u[i][j])*(u[i][j]-u[i][j-1]) + (u[i][j]+u[i][j+1])*(u[i][j+1]-u[i][j]));
+            adv2 = (0.25/h)*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]-u[i][j]) + (v[i][j+1]+v[i][j])*(u[i][j]-u[i+1][j]));
+            //adv2 = (1/(4.0*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]-u[i][j]) + (v[i][j+1]+v[i][j])*(u[i][j]-u[i+1][j]));
+            div1 = (0.25/h)*(pow(u[i][j+1]+u[i][j],2) - pow(u[i][j]+u[i][j-1],2));
+            //div1 = (1/(4.0*h))*((u[i][j+1]+u[i][j])*(u[i][j+1]+u[i][j]) - (u[i][j]+u[i][j-1])*(u[i][j]+u[i][j-1]));
+            div2 = (0.25/h)*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]+u[i][j]) - (v[i][j+1]+v[i][j])*(u[i][j]+u[i+1][j]));
+            //div2 = (1/(4.0*h))*((v[i-1][j+1]+v[i-1][j])*(u[i-1][j]+u[i][j]) - (v[i][j+1]+v[i][j])*(u[i][j]+u[i+1][j]));
             H = 0.5*(adv1+adv2) + 0.5*(div1+div2);
             convection = 0.5*(3*H - This->Hnpu[i][j]);
             penalization = This->xiu[i][j]*This->umixer[i][j]/This->dtau + u[i][j]/This->dt;
@@ -141,13 +145,17 @@ void Problem_Momentum(Problem *This){
         FR(j,1,Nx+1){
             pressure = (P[i-1][j-1]-P[i][j-1])/h;
             diffusion = (v[i][j+1]-2*v[i][j]+v[i][j-1])/(h*h) + (v[i-1][j]-2*v[i][j]+v[i+1][j])/(h*h);
-            adv1 = (1/(4*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]-v[i][j]) + (u[i][j-1]+u[i+1][j-1])*(v[i][j]-v[i][j-1]));
-            adv2 = (1/(4*h))*((v[i-1][j]+v[i][j])*(v[i-1][j]-v[i][j]) + (v[i][j]+v[i+1][j])*(v[i][j]-v[i+1][j]));
-            div1 = (1/(4*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]+v[i][j]) - (u[i][j-1]+u[i+1][j-1])*(v[i][j]+v[i][j-1]));
-            div2 = (1/(4*h))*((v[i-1][j]+v[i][j])*(v[i-1][j]+v[i][j]) - (v[i][j]+v[i+1][j])*(v[i][j]+v[i+1][j]));
+            adv1 = (0.25/h)*((u[i][j]+u[i+1][j])*(v[i][j+1]-v[i][j]) + (u[i][j-1]+u[i+1][j-1])*(v[i][j]-v[i][j-1]));
+            //adv1 = (1/(4.0*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]-v[i][j]) + (u[i][j-1]+u[i+1][j-1])*(v[i][j]-v[i][j-1]));
+            adv2 = (0.25/h)*((v[i-1][j]+v[i][j])*(v[i-1][j]-v[i][j]) + (v[i][j]+v[i+1][j])*(v[i][j]-v[i+1][j]));
+            //adv2 = (1/(4.0*h))*((v[i-1][j]+v[i][j])*(v[i-1][j]-v[i][j]) + (v[i][j]+v[i+1][j])*(v[i][j]-v[i+1][j]));
+            div1 = (0.25/h)*((u[i][j]+u[i+1][j])*(v[i][j+1]+v[i][j]) - (u[i][j-1]+u[i+1][j-1])*(v[i][j]+v[i][j-1]));
+            //div1 = (1/(4.0*h))*((u[i][j]+u[i+1][j])*(v[i][j+1]+v[i][j]) - (u[i][j-1]+u[i+1][j-1])*(v[i][j]+v[i][j-1]));
+            div2 = (0.25/h)*(pow(v[i-1][j]+v[i][j],2) - pow(v[i][j]+v[i+1][j],2));
+            //div2 = (1/(4.0*h))*((v[i-1][j]+v[i][j])*(v[i-1][j]+v[i][j]) - (v[i][j]+v[i+1][j])*(v[i][j]+v[i+1][j]));
             H = 0.5*(adv1+adv2) + 0.5*(div1+div2);
             convection = 0.5*(3*H - This->Hnpv[i][j]);
-            buoyancy = (This->T[i][j] + This->T[i+1][j])/2;
+            buoyancy = (This->T[i][j] + This->T[i+1][j])/2.0;
             penalization = This->xiv[i][j]*This->vmixer[i][j]/This->dtau + v[i][j]/This->dt;
             This->vstar[i][j] = 1./(1./This->dt + This->xiv[i][j]/This->dtau)*((1/sqrt(This->Gr))*diffusion - pressure - convection + buoyancy + penalization);
             This->Hnpv[i][j] = H;
@@ -168,7 +176,7 @@ void Problem_Energy(Problem *This){
     This->avgHeatFlux = 0;
     FR(j,1,Nx+1)
         This->avgHeatFlux += This->l0*h*(T[0][j] - T[1][j])/h;
-    This->avgHeatFlux /= Nx;
+    This->avgHeatFlux /= (double)Nx;
 
     This->averageTemp = 0;
     This->rmsTemp = 0;
@@ -189,7 +197,7 @@ void Problem_Energy(Problem *This){
             T[i][j] = This->Ts[i][j];
         }
     }
-    This->averageTemp /= (Nx*Ny);
+    This->averageTemp /= (double)(Nx*Ny);
     FR(i,1,Ny+1) 
         FR(j,1,Nx+1) 
             This->rmsTemp += pow(T[i][j] - This->averageTemp,2);
@@ -208,11 +216,29 @@ void Problem_Poisson(Problem *This){
     int iter = 0;
     This->SORtb = clock();
     
-    
-    
+    FR(i,1,Ny+1)
+		FR(j,1,Nx+1)
+			Phi[i][j] = 0.0;
+				
+    // Phi ghost points: dPhi/dx = 0 and dPhi/dy = 0
+	F(i,Ny+2){
+		Phi[i][0] = Phi[i][1];
+		Phi[i][Nx+1] = Phi[i][Nx];
+	}
+	F(j,Nx+2){
+		Phi[0][j] = Phi[1][j];
+		Phi[Ny+1][j] = Phi[Ny][j];
+	}
     
     while(This->globe > 1e-6){
-		// Phi ghost points: dPhi/dx = 0 and dPhi/dy = 0
+        FR(i,1,Ny+1){
+            FR(j,1,Nx+1){
+                Phistar[i][j] = (h*h)/4.0*(-1/This->dt*((ustar[i][j]-ustar[i][j-1])/h + (vstar[i-1][j]-vstar[i][j])/h) + (Phi[i+1][j] + Phi[i-1][j])/(h*h) + (Phi[i][j+1] + Phi[i][j-1])/(h*h));
+                Phi[i][j] = This->alpha*Phistar[i][j] + (1-This->alpha)*Phi[i][j];
+            }
+        }
+        
+        // Phi ghost points: dPhi/dx = 0 and dPhi/dy = 0
 		F(i,Ny+2){
 			Phi[i][0] = Phi[i][1];
 			Phi[i][Nx+1] = Phi[i][Nx];
@@ -220,15 +246,7 @@ void Problem_Poisson(Problem *This){
 		F(j,Nx+2){
 			Phi[0][j] = Phi[1][j];
 			Phi[Ny+1][j] = Phi[Ny][j];
-		}		
-		// NO MORE CONVERGENCE
-		
-        FR(i,1,Ny+1){
-            FR(j,1,Nx+1){
-                Phistar[i][j] = (h*h)/4*(-1/This->dt*((ustar[i][j]-ustar[i][j-1])/h + (vstar[i-1][j]-vstar[i][j])/h) + (Phi[i+1][j] + Phi[i-1][j])/(h*h) + (Phi[i][j+1] + Phi[i][j-1])/(h*h));
-                Phi[i][j] = This->alpha*Phistar[i][j] + (1-This->alpha)*Phi[i][j];
-            }
-        }
+		}
         
         This->sumR = 0;
         F(i,Ny){
@@ -237,7 +255,7 @@ void Problem_Poisson(Problem *This){
                 This->sumR += pow(This->R[i][j],2);
             }
         }
-        This->globe = This->dt*sqrt((3*h*h)/2*This->sumR);
+        This->globe = This->dt*sqrt((3*h*h)/2.0*This->sumR);
         iter++;
     }
     This->SORte = clock();
@@ -300,8 +318,8 @@ void Problem_WriteData(Problem *This){
     This->Rehw = 0.0;
     F(i,Ny+1){
 		F(j,Nx+1){
-			This->Reh = fmax(This->Reh, sqrt(This->Gr)*(abs(u[i][j]+u[i+1][j])/2 + abs(v[i][j]+v[i][j+1])/2)*h);
-			This->Rehw = fmax(This->Rehw, sqrt(This->Gr)*abs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
+			This->Reh = fmax(This->Reh, sqrt(This->Gr)*(fabs(u[i][j]+u[i+1][j])/2.0 + fabs(v[i][j]+v[i][j+1])/2.0)*h);
+			This->Rehw = fmax(This->Rehw, sqrt(This->Gr)*fabs(((v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h))*h*h);
 		}
 	}
 
@@ -317,7 +335,7 @@ void Problem_WriteData(Problem *This){
         // normv & vorty
         F(i,Ny+1){
             F(j,Nx+1){
-                This->normv[i][j] = sqrt(pow((u[i][j] + u[i+1][j])/2,2) + pow((v[i][j]+v[i][j+1])/2,2));
+                This->normv[i][j] = sqrt(pow((u[i][j] + u[i+1][j])/2.0,2) + pow((v[i][j]+v[i][j+1])/2.0,2));
                 This->vorty[i][j] = (v[i][j+1]-v[i][j])/h - (u[i][j]-u[i+1][j])/h;
             }
         }
@@ -345,11 +363,15 @@ void Problem_WriteData(Problem *This){
 void Problem_BoundaryConditions(Problem *This){
     int Nx = This->Nx;
     int Ny = This->Ny;
+    double h = This->h;
+    double **T = This->T;
 
     // T BC
     FR(j,1,Nx+1){
         This->T[Ny+1][j] = This->T[Ny][j] + This->h; // bottom heat transfer
-        This->T[0][j] = (-This->h/This->l0)*(1.5*This->T[1][j] - 0.5*This->T[2][j] - This->Tinf) + This->T[1][j]; // top heat transfer
+        This->T[0][j] = 1.0/(1.0/h + 5.0/(16*This->l0))*(T[1][j]/h - 1/(16*This->l0)*(T[3][j] - 5*T[2][j] + 15*T[1][j]) + This->Tinf/This->l0);
+        
+        //This->T[0][j] = (-This->h/This->l0)*(1.5*This->T[1][j] - 0.5*This->T[2][j] - This->Tinf) + This->T[1][j]; // top heat transfer
     }
     FR(i,1,Ny+1){
         This->T[i][0] = This->T[i][1]; // left adiabatic wall
@@ -417,11 +439,11 @@ void Problem_Mixer(Problem *This){
         }
     }
     This->mixerAngle += This->dt*This->omega;
-    This->avgTempMixer /= nMixerNodes;
+    This->avgTempMixer /= (double)nMixerNodes;
 }
 
 void Problem_IterationInfo(Problem *This){
-    printf("Iteration: %d\tAverage temperature: %lf\tRMS temperature: %lf\tAverage mixer temperature %lf\tAverage heat flux %lf\n",This->iter,This->averageTemp,This->rmsTemp,This->avgTempMixer,This->avgHeatFlux);
+    printf("Iteration: %d\tAverage temperature: %lf\tRMS temperature: %lf\tAverage mixer temperature %lf\tAverage heat flux %lf\tReh %lf\tRehw %lf\n",This->iter,This->averageTemp,This->rmsTemp,This->avgTempMixer,This->avgHeatFlux,This->Reh,This->Rehw);
 }
 
 void Problem_Free(Problem *This){

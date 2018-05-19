@@ -24,7 +24,7 @@ x = np.linspace(0,(1/1.5),num=Nx+1)
 y = np.linspace(1,0,num=Ny+1)
 Xv, Yv = np.meshgrid(x,y)
 Tcolors = np.linspace(-0.005,0.005,num=101)
-vcolors = np.linspace(-0.005,0.005,num=101)
+vcolors = np.linspace(0,0.05,num=101)
 wcolors = np.linspace(-2,2,num=101)
 
 cmap = plt.cm.jet
@@ -97,7 +97,7 @@ def initv():
     v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     v = v.reshape((Ny+1,Nx+1));
 
-    CS = plt.contourf(Xv,Yv,v,vcolors,cmap=plt.cm.jet)
+    CS = plt.contourf(Xv,Yv,v,vcolors,cmap=cmap,extend="both")
     cbar = plt.colorbar(CS)
     plotmixer(usemixer,0)
     return CS
@@ -107,7 +107,7 @@ def initw():
     w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
     w = w.reshape((Ny+1,Nx+1));
 
-    CS = plt.contourf(Xv,Yv,w,wcolors,cmap=plt.cm.jet)
+    CS = plt.contourf(Xv,Yv,w,wcolors,cmap=cmap,extend="both")
     cbar = plt.colorbar(CS)
     plotmixer(usemixer,0)
 
@@ -149,7 +149,7 @@ def animatev(i,CS,mf):
         v = v.reshape((Ny+1,Nx+1));
     except:
         return CS
-    CS = plt.contourf(Xv,Yv,v,vcolors,cmap=plt.cm.jet)
+    CS = plt.contourf(Xv,Yv,v,vcolors,cmap=cmap,extend="both")
     plotmixer(usemixer,i)
     plt.title(r'$\frac{|v|}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
@@ -163,7 +163,7 @@ def animatew(i,CS,mf):
         w = w.reshape((Ny+1,Nx+1));
     except:
         return CS
-    CS = plt.contourf(Xv,Yv,w,wcolors,cmap=plt.cm.jet)
+    CS = plt.contourf(Xv,Yv,w,wcolors,cmap=cmap,extend="both")
     plotmixer(usemixer,i)
     plt.title(r'$\frac{\omega H}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
