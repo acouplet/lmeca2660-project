@@ -12,10 +12,10 @@ make
 Before running the simulation, please create the directory `/code/data`
 
 The following 4 parameters needs to be given as argument to the `main` function:
-    - `Nx` the width of the box, in number of nodes
-    - `dt` an int defining the time step of the problem as dt = 1/`dt` 
-    - `saveIter` the number of iterations between every write of the data to files
-    - `useMixer` 0 or 1, defines if the mixer is used in the problem
+* `Nx` the width of the box, in number of nodes
+* `dt` an int defining the time step of the problem as dt = 1/`dt` 
+* `saveIter` the number of iterations between every write of the data to files
+* `useMixer` 0 or 1, defines if the mixer is used in the problem
 
 Example:
 ```c
