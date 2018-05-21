@@ -10,6 +10,7 @@ import matplotlib.animation as animation
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
+
 Nx       = int(sys.argv[1]);
 dt       = int(sys.argv[2]);
 saveIter = int(sys.argv[3]);
@@ -32,8 +33,62 @@ N = cmap.N
 cmap.set_under(cmap(1))
 cmap.set_over(cmap(N-1))
 
+def plotmixer2(um,i,ax):
+    if (um == 1):
+        theta = np.linspace(0,2*np.pi,1000)
+        omega = 0.1
+        r = 0.2*np.cos(3*(theta - i*saveIter*omega/dt))
+        x = r*np.cos(theta) + 1/3
+        y = r*np.sin(theta) + 1/3
+        ax.fill_between(x,0,y,facecolor='black')
+        x = 0.04*np.cos(theta) + 1/3
+        y = 0.04*np.sin(theta) + 1/3
+        ax.fill_between(x,0,y,facecolor='black')
+
+if (len(sys.argv) == 6):
+	t = int(sys.argv[5])
+	f, ax = plt.subplots(1,3,figsize=(9,3))
+	plt.subplots_adjust(wspace=0.4,hspace=0.3)
+	ax[0].set_xlim(0,1/1.5)
+	ax[0].set_ylim(0,1)
+	ax[0].set_aspect('equal')
+	fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,t),'rb');
+	T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
+	T = T.reshape((Ny+2,Nx+2));
+	CS = ax[0].contourf(XT,YT,T,Tcolors,cmap=cmap,extend="both")
+	cbar = plt.colorbar(CS,ax=ax[0])
+	plotmixer2(usemixer,t/saveIter,ax[0])
+	ax[0].set_title(r'$\frac{T-T_0}{\Delta T}$ at $\frac{tU}{H} = %.2f$' % (t/dt))
+	
+	ax[1].set_xlim(0,1/1.5)
+	ax[1].set_ylim(0,1)
+	ax[1].set_aspect('equal')
+	fd = open('data/Nx%d_dt%d_mixing%d/v_iter%d.bin' % (Nx,dt,usemixer,t),'rb');
+	v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
+	v = v.reshape((Ny+1,Nx+1));
+	CS = ax[1].contourf(Xv,Yv,v,vcolors,cmap=cmap,extend="both")
+	cbar = plt.colorbar(CS,ax=ax[1])
+	plotmixer2(usemixer,t/saveIter,ax[1])
+	ax[1].set_title(r'$\frac{|v|}{U}$ at $\frac{tU}{H} = %.2f$' % (t/dt))
+	
+	ax[2].set_xlim(0,1/1.5)
+	ax[2].set_ylim(0,1)
+	ax[2].set_aspect('equal')
+	fd = open('data/Nx%d_dt%d_mixing%d/w_iter%d.bin' % (Nx,dt,usemixer,t),'rb');
+	w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
+	w = w.reshape((Ny+1,Nx+1));
+	CS = ax[2].contourf(Xv,Yv,w,wcolors,cmap=cmap,extend="both")
+	cbar = plt.colorbar(CS,ax=ax[2])
+	plotmixer2(usemixer,t/saveIter,ax[2])
+	ax[2].set_title(r'$\frac{\omega H}{U}$ at $\frac{tU}{H} = %.2f$' % (t/dt))
+	plt.savefig('results/Nx%d_dt%d_mixing%d_iter%d.png' % (Nx,dt,usemixer,t),dpi=300)
+	exit()
+	
+	
 diag = open('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer),'rb');
 b = os.path.getsize('data/Nx%d_dt%d_mixing%d/diagnostics.bin' % (Nx,dt,usemixer));
+b = int(np.floor(b/48)*48)
+
 diag = np.fromfile(diag,dtype=np.float64,count= int(b/8));
 diag = diag.reshape((int(b/48),6));
 tUH = np.linspace(1/dt,b/48/dt,num=int(b/48))
@@ -73,6 +128,18 @@ plt.subplots_adjust(top=0.8)
 plt.savefig('results/diagnostics_Nx%d_dt%d_mixing%d.eps' % (Nx,dt,usemixer))
 plt.show()
 
+def plotmixer(um,i):
+    if (um == 1):
+        theta = np.linspace(0,2*np.pi,1000)
+        omega = 0.1
+        r = 0.2*np.cos(3*(theta - i*saveIter*omega/dt))
+        x = r*np.cos(theta) + 1/3
+        y = r*np.sin(theta) + 1/3
+        ax.fill_between(x,0,y,facecolor='black')
+        x = 0.04*np.cos(theta) + 1/3
+        y = 0.04*np.sin(theta) + 1/3
+        ax.fill_between(x,0,y,facecolor='black')
+
 def framesT():
     return len(glob.glob('data/Nx%d_dt%d_mixing%d/T_iter*.bin' % (Nx,dt,usemixer)))
 
@@ -81,6 +148,54 @@ def framesv():
 
 def framesw():
     return len(glob.glob('data/Nx%d_dt%d_mixing%d/w_iter*.bin' % (Nx,dt,usemixer)))
+
+def initTvw(ax):
+	fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
+	T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
+	T = T.reshape((Ny+2,Nx+2));
+	CS = ax[0].contourf(XT,YT,T,Tcolors,cmap=cmap,extend="both")
+	plt.colorbar(CS,ax=ax[0])
+	plotmixer2(usemixer,0,ax[0])
+	
+	fd = open('data/Nx%d_dt%d_mixing%d/v_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
+	v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
+	v = v.reshape((Ny+1,Nx+1));
+	CS = ax[1].contourf(Xv,Yv,v,vcolors,cmap=cmap,extend="both")
+	plt.colorbar(CS,ax=ax[1])
+	plotmixer2(usemixer,0,ax[1])
+	
+	fd = open('data/Nx%d_dt%d_mixing%d/w_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
+	w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
+	w = w.reshape((Ny+1,Nx+1));
+	CS = ax[2].contourf(Xv,Yv,w,wcolors,cmap=cmap,extend="both")
+	plt.colorbar(CS,ax=ax[2])
+	plotmixer2(usemixer,0,ax[2])
+	
+def animateTvw(i,mf,ax):
+    print('Tvw: %d/%d (%.1f%%)\r' % (i*saveIter, mf*saveIter, i/mf*100),end="",flush=True)
+    ax[0].clear()
+    fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,i*saveIter),'rb');
+    T = np.fromfile(fd,dtype=np.float64, count = (Nx+2)*(Ny+2));
+    T = T.reshape((Ny+2,Nx+2));
+    ax[0].contourf(XT,YT,T,Tcolors,cmap=cmap,extend="both")
+    plotmixer2(usemixer,i,ax[0])
+    ax[0].set_title(r'$\frac{T-T_0}{\Delta T}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
+    
+    ax[1].clear()
+    fd = open('data/Nx%d_dt%d_mixing%d/v_iter%d.bin' % (Nx,dt,usemixer,i*saveIter),'rb');
+    v = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
+    v = v.reshape((Ny+1,Nx+1));
+    ax[1].contourf(Xv,Yv,v,vcolors,cmap=cmap,extend="both")
+    plotmixer2(usemixer,i,ax[1])
+    ax[1].set_title(r'$\frac{|v|}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
+    
+    ax[2].clear()
+    fd = open('data/Nx%d_dt%d_mixing%d/w_iter%d.bin' % (Nx,dt,usemixer,i*saveIter),'rb');
+    w = np.fromfile(fd,dtype=np.float64, count = (Nx+1)*(Ny+1));
+    w = w.reshape((Ny+1,Nx+1));
+    ax[2].contourf(Xv,Yv,w,wcolors,cmap=cmap,extend="both")
+    plotmixer2(usemixer,i,ax[2])
+    ax[2].set_title(r'$\frac{\omega H}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
 
 def initT():
 	fd = open('data/Nx%d_dt%d_mixing%d/T_iter%d.bin' % (Nx,dt,usemixer,0),'rb');
@@ -115,18 +230,6 @@ def initw():
     
 
     return CS
-
-def plotmixer(um,i):
-    if (um == 1):
-        theta = np.linspace(0,2*np.pi,1000)
-        omega = 0.1
-        r = 0.2*np.cos(3*(theta - i*saveIter*omega/dt))
-        x = r*np.cos(theta) + 1/3
-        y = r*np.sin(theta) + 1/3
-        ax.fill_between(x,0,y,facecolor='black')
-        x = 0.04*np.cos(theta) + 1/3
-        y = 0.04*np.sin(theta) + 1/3
-        ax.fill_between(x,0,y,facecolor='black')
 
 
 def animateT(i,CS,mf):
@@ -171,6 +274,17 @@ def animatew(i,CS,mf):
     plt.title(r'$\frac{\omega H}{U}$ at $\frac{tU}{H} = %.2f$' % (i*saveIter/dt))
     return CS
 
+my_dpi = 150
+f, ax = plt.subplots(1,3,figsize=(1800/my_dpi, 600/my_dpi), dpi=my_dpi)
+plt.subplots_adjust(wspace=0.4,hspace=0.3)
+ax[0].set_xlim(0,1/1.5)
+ax[0].set_ylim(0,1)
+ax[0].set_aspect('equal')
+initTvw(ax)
+maxframe = framesT()
+anim = animation.FuncAnimation(f,animateTvw,interval=1000/25,fargs=(maxframe,ax),frames=maxframe)
+anim.save('results/Tvw_Nx%d_dt%d_mixing%d.mp4' % (Nx,dt,usemixer),bitrate=30000)
+exit()
 
 fig = plt.figure()
 ax = plt.axes(xlim=(0,1/1.5),ylim=(0,1))
